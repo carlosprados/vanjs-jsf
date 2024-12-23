@@ -5,6 +5,14 @@
     "module": "ESNext",
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "skipLibCheck": true,
+    "baseUrl": "./",
+    "paths": { "*": ["./node_modules/*", "./src/types/*"] },
+    "typeRoots": [
+      "./node_modules/@types", // Tipos instalados de DefinitelyTyped
+      "./src/types" // Carpeta donde tienes tus archivos .d.ts
+    ],
+
+    "esModuleInterop": true,
 
     /* Bundler mode */
     "moduleResolution": "bundler",
@@ -19,5 +27,11 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src"]
+  "include": [
+    "./src/**/*" // Incluye todos los archivos TypeScript en tu proyecto
+  ],
+  "exclude": [
+    "node_modules", // Excluye dependencias
+    "dist" // Excluye archivos compilados
+  ]
 }
