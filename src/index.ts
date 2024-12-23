@@ -69,7 +69,7 @@ const App = () => {
     strictInputType: false,
     initialValues: initialValues,
   };
-  const smartForm: VanJsfForm = new VanJsfForm(
+  const vanJsfForm: VanJsfForm = new VanJsfForm(
     "smart-form",
     jsonSchemaDemo,
     jsfConfig,
@@ -78,7 +78,7 @@ const App = () => {
   return div(
     h1("json-schema-form + VanJS"),
     p("This demo uses VanJS without any other form library."),
-    smartForm.render()
+    vanJsfForm.render()
   );
 };
 
