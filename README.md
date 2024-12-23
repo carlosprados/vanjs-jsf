@@ -27,24 +27,24 @@ This is what we want to have when the work will be done:
 
 1. Install the library:
 
-   ```bash
-   npm install vanjs-jsf
-   ```
+  ```bash
+  npm install vanjs-jsf
+  ```
 
 2. Import and use it in your project:
 
-   ```typescript
-   import { VanJsfForm } from 'vanjs-jsf';
+  ```typescript
+  import { VanJsfForm } from 'vanjs-jsf';
 
-   const schema = {
-     type: 'object',
-     properties: {
-       name: { type: 'string', title: 'Name' },
-       age: { type: 'number', title: 'Age' },
-     },
-   };
+  const schema = {
+    type: 'object',
+    properties: {
+      name: { type: 'string', title: 'Name' },
+      age: { type: 'number', title: 'Age' },
+    },
+  };
 
-   const vanJsfForm = new VanJsfForm (schema);
+  const vanJsfForm = new VanJsfForm (schema);
 
    ```
 
