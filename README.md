@@ -45,6 +45,13 @@ This is what we want to have when the work will be done:
    };
 
    const vanJsfForm = new VanJsfForm (schema);
+
+   ```
+
+3. Render the generated form using VanJS UI framework.
+
+  ```typescript
+
    // To add the form to an VanJS element you have to call the `render` function
    el = div(
     h1("json-schema-form + VanJS"),
@@ -52,9 +59,7 @@ This is what we want to have when the work will be done:
     vanJsfForm.render() // Call render function
    );
 
-   ```
-
-3. Render the generated form using VanJS UI framework.
+  ```
 
 ## Contributing
 
