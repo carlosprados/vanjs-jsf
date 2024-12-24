@@ -1,5 +1,4 @@
 import van from "vanjs-core";
-import * as vanX from "vanjs-ext";
 
 import {
   createHeadlessForm,
@@ -20,8 +19,7 @@ export class VanJsfForm extends VanJSComponent {
   headlessForm: HeadlessFormOutput;
   formFields: VanJsfField[];
   onSubmit: (data: Record<string, any>) => void;
-  formValues: Record<string, any> = {};
-  formFieldMap: Record<string, VanJsfField>;
+  formValues: Record<string, any>;
 
   constructor(
     name: string,
@@ -40,41 +38,49 @@ export class VanJsfForm extends VanJSComponent {
     this.onSubmit = onSubmit;
     // Working with parameters
     this.headlessForm = createHeadlessForm(jsonSchema, config);
-    // Read documentation about `getFieldsFromJsf` method below
-    this.formFields = this.getFieldsFromJsf(
+    // Read documentation about `getFieldsAndValuedFromJsf` method below
+    const { vanJsfFields, formValues } = this.getFieldsAndValuedFromJsf(
       this.headlessForm,
       this.config.initialValues
     );
-
-    this.formFieldMap = this.formFields.reduce<Record<string, VanJsfField>>(
-      (map, field) => {
-        map[field.name] = field;
-        return map;
-      },
-      {}
-    );
+    this.formFields = vanJsfFields;
+    this.formValues = formValues;
   }
 
   /**
-   * Processes fields from a headless JSON Schema Form (JSF) and maps them to `VanJsfField` instances.
-   * It also initializes default values for each field and stores them in the `formValues` object.
+   * Generates fields and their initial values from a headless JSON Schema Form (JSF).
+   * This method processes the fields provided by the headless form, maps them to `VanJsfField` instances,
+   * and initializes the corresponding form values.
    *
-   * @param headlessForm - The output object from the `createHeadlessForm` function, containing metadata and configuration for the fields.
-   * @param initialValues - An object where the keys represent field names and the values are the initial values for each field.
+   * @param headlessForm - The output of the `createHeadlessForm` function, containing metadata and configuration for the form fields.
+   * @param initialValues - A record object where the keys represent field names, and the values are the initial values for the fields.
    *
-   * @returns An array of `VanJsfField` objects, each representing a field in the form with its associated initial value and change handler.
+   * @returns An object containing:
+   *  - `vanJsfFields`: An array of `VanJsfField` instances representing the fields in the form.
+   *  - `formValues`: A record object mapping field names to their respective initial values.
    *
    * @remarks
-   * - This function currently does not support recursive handling of field sets.
-   * - The `field.default` property is not well-documented in the JSF API.
-   *   The documentation suggests using `defaultValue`, but in practice, the `field.default` property seems to be used.
+   * - **Field Sets**: The method currently does not support field sets recursively. This needs to be implemented as part of future enhancements.
+   * - **Default Values**:
+   *   - The default values are determined based on the following precedence:
+   *     1. Value in `initialValues`.
+   *     2. The `field.default` property.
+   *     3. An empty string (`""`) if neither is present.
+   *   - Note: The `field.default` property is not clearly documented in the JSF API. The documentation mentions `defaultValue` instead, but this is not observed in practice.
+   *
+   * @example
+   * // Example usage
+   * const { vanJsfFields, formValues } = getFieldsFromJsf(headlessForm, initialValues);
+   * console.log(vanJsfFields); // Array of VanJsfField instances
+   * console.log(formValues);   // Record of field names and their initial values
    */
-  getFieldsFromJsf(
+  getFieldsAndValuedFromJsf(
     headlessForm: HeadlessFormOutput,
     initialValues: Record<string, any>
-  ): VanJsfField[] {
+  ): { vanJsfFields: VanJsfField[]; formValues: Record<string, any> } {
     const fields: Fields = headlessForm.fields;
-    return fields.map((field) => {
+    const formValues: Record<string, any> = {};
+    const vanJsfFields: VanJsfField[] = fields.map((field) => {
       // TODO needs to support field sets recursively
       // Extract the field name as a string
       const fieldName: string = field.name as string;
@@ -84,10 +90,11 @@ export class VanJsfForm extends VanJSComponent {
       // They say the property for default values is `defaultValue` but it's not
       const initVal = initialValues[fieldName] || field.default || "";
       // Store the initial value in the form values map
-      this.formValues[fieldName] = initVal;
+      formValues[fieldName] = initVal;
       // Create and return a new VanJsfField instance for this field
       return new VanJsfField(field, initVal, this.handleFieldChange);
     });
+    return { vanJsfFields, formValues };
   }
 
   handleFieldChange(field: VanJsfField, value: MultiType) {
