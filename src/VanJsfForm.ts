@@ -7,39 +7,28 @@ import {
   JSONSchemaObjectType,
 } from "@remoteoss/json-schema-form";
 
-import { VanJSComponent } from "./VanJSComponent";
 import { VanJsfField, MultiType } from "./VanJsfField";
 
-const { form, button } = van.tags;
+const { form } = van.tags;
 
-export class VanJsfForm extends VanJSComponent {
-  name: string;
+class VanJsfForm {
   schema: JSONSchemaObjectType;
   config: Record<string, any>;
   headlessForm: HeadlessFormOutput;
   formFields: VanJsfField[];
-  onSubmit: (data: Record<string, any>) => void;
   formValues: Record<string, any>;
 
-  constructor(
-    name: string,
-    jsonSchema: JSONSchemaObjectType,
-    config: Record<string, any>,
-    onSubmit: (data: Record<string, any>) => void
-  ) {
-    super();
+  constructor(jsonSchema: JSONSchemaObjectType, config: Record<string, any>) {
     // Bind methods to instance. Needed to pass functions as props to child components
-    this.handleSubmit = this.handleSubmit.bind(this);
+    //this.handleSubmit = this.handleSubmit.bind(this);
     this.handleFieldChange = this.handleFieldChange.bind(this);
     // Receive parameters
-    this.name = name;
     this.schema = jsonSchema;
     this.config = config;
-    this.onSubmit = onSubmit;
     // Working with parameters
     this.headlessForm = createHeadlessForm(jsonSchema, config);
     // Read documentation about `getFieldsAndValuedFromJsf` method below
-    const { vanJsfFields, formValues } = this.getFieldsAndValuedFromJsf(
+    const { vanJsfFields, formValues } = this.getFieldsAndValuesFromJsf(
       this.headlessForm,
       this.config.initialValues
     );
@@ -69,12 +58,11 @@ export class VanJsfForm extends VanJSComponent {
    *   - Note: The `field.default` property is not clearly documented in the JSF API. The documentation mentions `defaultValue` instead, but this is not observed in practice.
    *
    * @example
-   * // Example usage
    * const { vanJsfFields, formValues } = getFieldsFromJsf(headlessForm, initialValues);
    * console.log(vanJsfFields); // Array of VanJsfField instances
    * console.log(formValues);   // Record of field names and their initial values
    */
-  getFieldsAndValuedFromJsf(
+  getFieldsAndValuesFromJsf(
     headlessForm: HeadlessFormOutput,
     initialValues: Record<string, any>
   ): { vanJsfFields: VanJsfField[]; formValues: Record<string, any> } {
@@ -107,17 +95,36 @@ export class VanJsfForm extends VanJSComponent {
       f.error = formErrors?.[f.name] ?? "";
     });
   }
+}
 
-  handleSubmit(event: Event): void {
-    event.preventDefault();
-    this.onSubmit(this.formValues);
+export function jsform(
+  attributes: Record<string, any>,
+  ...children: any[]
+): HTMLFormElement {
+  if (!attributes.schema) {
+    throw new Error("JSON Schema is required");
   }
+  let config = attributes.config;
+  if (!config) {
+    config = { initialValues: {}, formValues: {} };
+  } else if (!config.initialValues) {
+    config.initialValues = {};
+  } else if (!config.formValues) {
+    config.formValues = {};
+  }
+  const vanJsfForm: VanJsfForm = new VanJsfForm(attributes.schema, config);
+  const fields: Element[] = vanJsfForm.formFields.map((field: VanJsfField) =>
+    field.render()
+  );
 
-  render(): Element {
-    return form(
-      { name: this.name, onsubmit: this.handleSubmit },
-      this.formFields.map((field: VanJsfField) => field.render()),
-      button({ type: "submit" }, "Submit")
-    );
-  }
+  const childrenWithFields = [...fields, ...children]; // Concatenate fields with other children
+
+  const originalOnSubmit = attributes.onsubmit;
+  const handleSubmit = (e: Event) => {
+    e.preventDefault();
+    config.formValues = vanJsfForm.formValues;
+    originalOnSubmit && originalOnSubmit(e);
+  };
+  attributes.onsubmit = handleSubmit;
+  return form(attributes, ...childrenWithFields);
 }

@@ -4,16 +4,16 @@
 
 ## Description
 
-This library provides a robust and flexible solution for generating user interface (UI) forms dynamically using JSON Schema definitions. Built on **TypeScript** for type safety and leveraging the powerful **Headless UI** framework, it ensures a modern, accessible, and customizable form-building experience.
+This library aims to provide a robust and flexible solution for dynamically generating user interface (UI) forms using JSON Schema definitions. It is built on **TypeScript** for type safety and leverages the powerful [JSON Schema Form Headless UI](https://github.com/remoteoss/json-schema-form) framework, which you can find documented [here](https://json-schema-form.vercel.app). It ensures a lightweight, modern, accessible, and customizable form-building experience.
 
 ### Features to implement
 
 - [ ] **Dynamic Form Generation**: Create forms directly from JSON Schema, reducing repetitive coding tasks.
-- [ ] **Customizable**: Tailor form styles, layouts, and behaviors to meet specific UI/UX requirements.
+- [ ] **Customizable**: Tailor form styles, layouts, and behaviours to meet specific UI/UX requirements.
 - [ ] **Headless UI Integration**: Utilize Headless UI's components for accessible and modern interfaces.
 - [ ] **TypeScript-first Approach**: Enjoy strong typing and enhanced developer experience with TypeScript.
 - [ ] **Validation Support**: Easily integrate JSON Schema-based validation for seamless user input handling.
-- [ ] **Extensible Architecture**: Add custom widgets, field types, and behaviors as needed.
+- [ ] **Extensible Architecture**: Add custom widgets, field types, and behaviours as needed.
 
 ### Use Cases
 
@@ -23,48 +23,70 @@ This library provides a robust and flexible solution for generating user interfa
 
 ## Getting Started
 
-This is what we want to have when the work will be done:
-
 1. Install the library:
+
+We're working on publishing the library in the `nmp` repository.
 
   ```bash
   npm install vanjs-jsf
   ```
 
-2. Import and use it in your project:
+1. Import it in your project & define your JSON schema + config:
 
   ```typescript
-  import { VanJsfForm } from 'vanjs-jsf';
+  import { jsform } from 'vanjs-jsf';
 
   const schema = {
     type: 'object',
     properties: {
-      name: { type: 'string', title: 'Name' },
+      userName: { type: 'string', title: 'Name' },
       age: { type: 'number', title: 'Age' },
     },
   };
 
-  const vanJsfForm = new VanJsfForm (schema);
-
+  // Initial values to fill the form
+  const initialValues = { userName: "Simon" };
+  // JSON Schema Form config
+  const config = {
+    strictInputType: false,
+    initialValues: initialValues,
+    formValues: initialValues,
+  };
    ```
 
-3. Render the generated form using VanJS UI framework.
+1. Render the form using VanJS UI framework & handle form submit.
+
+  This library will call the `onsubmit` handler set using the VanJS `props` passing the original source event.
 
   ```typescript
+  const handleOnSubmit = (e: Event) => {
+    e.preventDefault();
+    const values = jsfConfig.formValues;
+    alert(`Submitted successfully: ${JSON.stringify(values, null, 2)}`);
+    console.log("Submitted!", values);
+  };
 
-   // To add the form to an VanJS element you have to call the `render` function
-   el = div(
-    h1("json-schema-form + VanJS"),
-    p("This demo uses VanJS without any other form library."),
-    vanJsfForm.render() // Call render function
-   );
+   // Add the JSON Schema Form to an VanJS element 
+  div(
+      h1("json-schema-form + VanJS"),
+      p("This demo uses VanJS without any other form library."),
+      jsform(
+        {
+          name: "my-jsf-form",
+          schema: schema, // JSON Schema defined previously
+          config: config, // JSON Schema Form configuration
+          onsubmit: handleOnSubmit,
+        },
+        button({ type: "submit" }, "Submit")
+      )
+    );
 
   ```
 
 ## Contributing
 
-Contributions are welcome! Please check out the [Contributing Guidelines](./CONTRIBUTING.md) to get started. We are actively looking for feedback and feature suggestions to improve the library.
+Contributions are welcome! Please submit a pull request if you have ideas, feedback, or improvements. Your contributions will help make this library more robust and useful for the community.
 
 ## License
 
-This project is licensed under the Apache 2 License. See the [LICENSE](./LICENSE) file for details.
+This project is licensed under the Apache 2 License. For details, see the [LICENSE](./LICENSE) file.
