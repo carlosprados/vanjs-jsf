@@ -1,37 +1,16 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
-    "useDefineForClassFields": true,
-    "module": "ESNext",
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
-    "skipLibCheck": true,
-    "baseUrl": "./",
-    "paths": { "*": ["./node_modules/*", "./src/types/*"] },
-    "typeRoots": [
-      "./node_modules/@types", // Tipos instalados de DefinitelyTyped
-      "./src/types" // Carpeta donde tienes tus archivos .d.ts
-    ],
-
-    "esModuleInterop": true,
-
-    /* Bundler mode */
-    "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "noEmit": true,
-
-    /* Linting */
-    "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true
+    "target": "ESNext",               // Compila para navegadores modernos
+    "module": "ESNext",               // Usa módulos ES
+    "moduleResolution": "node",       // Resolución de módulos al estilo Node.js
+    "declaration": true,              // Genera definiciones de tipos
+    "emitDeclarationOnly": false,     // Emite tanto JS como .d.ts
+    "outDir": "./dist",               // Carpeta de salida
+    "rootDir": "./lib",               // Carpeta raíz de los archivos fuente
+    "strict": true,                   // Habilita comprobaciones estrictas
+    "esModuleInterop": true,          // Interoperabilidad con CommonJS
+    "skipLibCheck": true              // Omite verificaciones de dependencias externas
   },
-  "include": [
-    "./src/**/*" // Incluye todos los archivos TypeScript en tu proyecto
-  ],
-  "exclude": [
-    "node_modules", // Excluye dependencias
-    "dist" // Excluye archivos compilados
-  ]
+  "include": ["lib"],                 // Incluye todos los archivos fuente
+  "exclude": ["node_modules", "dist"] // Excluye dependencias y la salida
 }
