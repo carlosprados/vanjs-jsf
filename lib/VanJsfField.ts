@@ -1,13 +1,15 @@
 import van, { State } from "vanjs-core";
 import { VanJSComponent } from "./VanJSComponent";
-
-const { div, p, input, label, textarea, legend } = van.tags;
+import pikaday from "pikaday";
+const { div, p, input, label, textarea, legend, link, fieldset, span } = van.tags;
 
 enum FieldType {
   text = "text",
   number = "number",
   textarea = "textarea",
   radio = "radio",
+  date = "date",
+  fieldset = "fieldset"
 }
 
 export interface Option {
@@ -25,7 +27,6 @@ export class VanJsfField extends VanJSComponent {
   handleChange: (field: VanJsfField, value: MultiType) => void;
   isVisibleState: State<boolean>;
   errorState: State<string>;
-
   constructor(
     field: Record<string, unknown>,
     initVal: string,
@@ -49,6 +50,18 @@ export class VanJsfField extends VanJSComponent {
   get label(): string {
     return this.field.label as string;
   }
+  get class(): string {
+    return this.field.class as string;
+  }
+  get containerClass(): string {
+    return this.field.containerClass as string;
+  }
+  get titleClass(): string {
+    return this.field.titleClass as string;
+  }
+  get descriptionClass(): string {
+    return this.field.descriptionClass as string;
+  }
   get description(): string {
     return this.field.description as string;
   }
@@ -70,22 +83,23 @@ export class VanJsfField extends VanJSComponent {
   set error(val: string) {
     this.errorState.val = val;
   }
-
   render(): Element {
     let el: Element;
     const props: Record<string, any> = {
       style: () => (this.isVisible ? "display: block" : "display: none"),
+      class: this.containerClass ? this.containerClass : ''
     };
     switch (this.inputType) {
       case FieldType.text:
         el = div(
           props,
-          label({ for: this.name }, this.label),
+          label({ for: this.name, style: "margin-right: 5px;", class: this.titleClass ? this.titleClass : '' }, this.label),
           this.description &&
-            div({ id: `${this.name}-description` }, this.description),
+          div({ id: `${this.name}-description`, class: this.descriptionClass ? this.descriptionClass : '' }, this.description),
           input({
             id: this.name,
             type: "text",
+            class: this.class ? this.class : '',
             value: this.iniVal,
             oninput: (e: any) => this.handleChange(this, e.target.value),
           }),
@@ -96,35 +110,77 @@ export class VanJsfField extends VanJSComponent {
       case FieldType.textarea:
         el = div(
           props,
-          label({ for: this.name }, this.label),
+          label({ for: this.name, style: "margin-right: 5px;", class: this.titleClass ? this.titleClass : '' }, this.label),
           this.description &&
-            div({ id: `${this.name}-description` }, this.description),
+          div({ id: `${this.name}-description`, class: this.descriptionClass ? this.descriptionClass : '' }, this.description),
           textarea({
             id: this.name,
             name: this.name,
+            class: this.class ? this.class : null,
             rows: this.field.rows as number,
             cols: this.field.columns as number,
             oninput: (e: any) => this.handleChange(this, e.target.value),
           })
         );
         break;
+      case FieldType.date:
+        const calendarInput = input({
+          id: this.name,
+          type: "text",
+          class: this.class ? this.class : null,
+          value: this.iniVal,
+          onchange: (e: any) => this.handleChange(this, e.target.value),
+        })
+        el =
+          div(
+            props,
+            label({ for: this.name, style: "margin-right: 5px;", class: this.titleClass ? this.titleClass : '' }, this.label),
+            this.description &&
+            div({ id: `${this.name}-description`, class: this.descriptionClass ? this.descriptionClass : '' }, this.description),
+            calendarInput,
+            link({ rel: "stylesheet", type: "text/css", href: "https://cdn.jsdelivr.net/npm/pikaday/css/pikaday.css" })
+          );
+        new pikaday({
+          field: calendarInput,
+          format: 'D/M/YYYY',
+          toString(date, format) {
+            // you should do formatting based on the passed format,
+            // but we will just return 'D/M/YYYY' for simplicity
+            const day = date.getDate();
+            const month = date.getMonth() + 1;
+            const year = date.getFullYear();
+            return `${day}/${month}/${year}`;
+          },
+        });
+        break;
       case FieldType.number:
         el = div(
           props,
-          label({ for: this.name }, this.label),
+          label({ for: this.name, style: "margin-right: 5px;", class: this.titleClass ? this.titleClass : '' }, this.label),
           this.description &&
-            div({ id: `${this.name}-description` }, this.description),
+          div({ id: `${this.name}-description`, class: this.descriptionClass ? this.descriptionClass : '' }, this.description),
           input({
             id: this.name,
             type: "number",
+            class: this.class ? this.class : null,
             value: this.iniVal,
             oninput: (e: any) => this.handleChange(this, e.target.value),
           })
         );
         break;
+      case FieldType.fieldset:
+        console.log(this.field)
+        el = div(
+          props,
+          fieldset(legend({ class: this.titleClass ? this.titleClass : '' }, this.label), this.description &&
+            span({ id: `${this.name}-description`, class: this.descriptionClass ? this.descriptionClass : '' }, this.description), this.isVanJsfFieldArray(this.field.fields) ? this.field.fields.map((field: VanJsfField) =>
+              field.render()
+            ) : null)
+        );
+        break;
       case FieldType.radio:
         el = div(
-          legend(this.label),
+          legend({ class: this.titleClass ? this.titleClass : '' }, this.label),
           this.description && div(this.description),
           div(
             this.options?.map((opt: any) =>
@@ -132,6 +188,7 @@ export class VanJsfField extends VanJSComponent {
                 input({
                   type: "radio",
                   name: this.name,
+                  class: this.class ? this.class : null,
                   value: opt.value,
                   checked: this.iniVal === opt.value,
                   onchange: (e: any) => this.handleChange(this, e.target.value),
@@ -151,4 +208,8 @@ export class VanJsfField extends VanJSComponent {
     }
     return el;
   }
+  isVanJsfFieldArray(fields: any): fields is VanJsfField[] {
+    return Array.isArray(fields) && fields.every(field => field instanceof VanJsfField);
+  }
 }
+
