@@ -67,21 +67,10 @@ class VanJsfForm {
     initialValues: Record<string, any>
   ): { vanJsfFields: VanJsfField[]; formValues: Record<string, any> } {
     const fields: Fields = headlessForm.fields;
+    console.log(fields)
     const formValues: Record<string, any> = {};
-    const vanJsfFields: VanJsfField[] = fields.map((field) => {
-      // TODO needs to support field sets recursively
-      // Extract the field name as a string
-      const fieldName: string = field.name as string;
-      // Determine the initial value for the field
-      // **Important**!: `field.default` is not properly documented in
-      // https://json-schema-form.vercel.app/?path=/docs/api-reference-api--docs
-      // They say the property for default values is `defaultValue` but it's not
-      const initVal = initialValues[fieldName] || field.default || "";
-      // Store the initial value in the form values map
-      formValues[fieldName] = initVal;
-      // Create and return a new VanJsfField instance for this field
-      return new VanJsfField(field, initVal, this.handleFieldChange);
-    });
+    const vanJsfFields: VanJsfField[] = this.processFields(fields, initialValues, formValues);
+
     return { vanJsfFields, formValues };
   }
 
@@ -95,8 +84,26 @@ class VanJsfForm {
       f.error = formErrors?.[f.name] ?? "";
     });
   }
-}
+  processFields(fields: any[], initialValues: any, formValues: any, parentPath: string = ""): VanJsfField[] {
+    return fields.map((field) => {
+      // Construct the full path for the field
+      const fieldPath: string = parentPath ? `${parentPath}.${field.name}` : field.name;
+      // Determine the initial value for the field
+      const initVal = initialValues[fieldPath] || field.default || "";
+      // Store the initial value in the form values map
+      formValues[fieldPath] = initVal;
+      console.log(formValues)
+      console.log(initialValues)
+      // Check if the field has nested fields and process them recursively
+      if (field.fields && field.fields.length > 0) {
+        field.fields = this.processFields(field.fields, initialValues, formValues, fieldPath);
+      }
 
+      // Create and return a new VanJsfField instance for this field
+      return new VanJsfField(field, initVal, this.handleFieldChange);
+    });
+  }
+}
 export function jsform(
   attributes: Record<string, any>,
   ...children: any[]
@@ -113,10 +120,10 @@ export function jsform(
     config.formValues = {};
   }
   const vanJsfForm: VanJsfForm = new VanJsfForm(attributes.schema, config);
+  console.log(vanJsfForm)
   const fields: Element[] = vanJsfForm.formFields.map((field: VanJsfField) =>
     field.render()
   );
-
   const childrenWithFields = [...fields, ...children]; // Concatenate fields with other children
 
   const originalOnSubmit = attributes.onsubmit;
@@ -125,6 +132,10 @@ export function jsform(
     config.formValues = vanJsfForm.formValues;
     originalOnSubmit && originalOnSubmit(e);
   };
+  const handleChange = (e: Event) => {
+    config.formValues = vanJsfForm.formValues;
+  };
   attributes.onsubmit = handleSubmit;
+  attributes.onchange = handleChange;
   return form(attributes, ...childrenWithFields);
 }
