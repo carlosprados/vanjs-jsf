@@ -1,4 +1,4 @@
-import van from "vanjs-core";
+import van, { State } from "vanjs-core";
 
 import {
   createHeadlessForm,
@@ -14,17 +14,19 @@ const { form } = van.tags;
 class VanJsfForm {
   schema: JSONSchemaObjectType;
   config: Record<string, any>;
+  isValid: State<Boolean> | undefined;
   headlessForm: HeadlessFormOutput;
   formFields: VanJsfField[];
   formValues: Record<string, any>;
 
-  constructor(jsonSchema: JSONSchemaObjectType, config: Record<string, any>) {
+  constructor(jsonSchema: JSONSchemaObjectType, config: Record<string, any>, isValid?: State<Boolean>) {
     // Bind methods to instance. Needed to pass functions as props to child components
     //this.handleSubmit = this.handleSubmit.bind(this);
     this.handleFieldChange = this.handleFieldChange.bind(this);
     // Receive parameters
     this.schema = jsonSchema;
     this.config = config;
+    this.isValid = isValid || undefined
     // Working with parameters
     this.headlessForm = createHeadlessForm(jsonSchema, config);
     // Read documentation about `getFieldsAndValuedFromJsf` method below
@@ -83,6 +85,14 @@ class VanJsfForm {
       f.isVisible = f.field.isVisible as boolean;
       f.error = formErrors?.[f.name] ?? "";
     });
+    if (this.isValid) {
+      if (formErrors) {
+        if (this.isValid)
+          this.isValid.val = false
+      } else {
+        this.isValid.val = true
+      }
+    }
   }
   processFields(fields: any[], initialValues: any, formValues: any, parentPath: string = ""): VanJsfField[] {
     return fields.map((field) => {
@@ -112,6 +122,7 @@ export function jsform(
     throw new Error("JSON Schema is required");
   }
   let config = attributes.config;
+  let isValid = attributes.isValid;
   if (!config) {
     config = { initialValues: {}, formValues: {} };
   } else if (!config.initialValues) {
@@ -119,21 +130,23 @@ export function jsform(
   } else if (!config.formValues) {
     config.formValues = {};
   }
-  const vanJsfForm: VanJsfForm = new VanJsfForm(attributes.schema, config);
+  const vanJsfForm: VanJsfForm = new VanJsfForm(attributes.schema, config, isValid);
   console.log(vanJsfForm)
   const fields: Element[] = vanJsfForm.formFields.map((field: VanJsfField) =>
     field.render()
   );
   const childrenWithFields = [...fields, ...children]; // Concatenate fields with other children
-
   const originalOnSubmit = attributes.onsubmit;
   const handleSubmit = (e: Event) => {
     e.preventDefault();
     config.formValues = vanJsfForm.formValues;
     originalOnSubmit && originalOnSubmit(e);
   };
+  const originalOnChange = attributes.onchange;
   const handleChange = (e: Event) => {
+    e.preventDefault();
     config.formValues = vanJsfForm.formValues;
+    originalOnChange && originalOnChange(vanJsfForm, e);
   };
   attributes.onsubmit = handleSubmit;
   attributes.onchange = handleChange;

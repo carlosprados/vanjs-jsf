@@ -1,12 +1,13 @@
 import van, { State } from "vanjs-core";
 import { VanJSComponent } from "./VanJSComponent";
 import pikaday from "pikaday";
-const { div, p, input, label, textarea, legend, link, fieldset, span } = van.tags;
+const { div, p, input, label, textarea, legend, link, fieldset, span, select, option } = van.tags;
 
 enum FieldType {
   text = "text",
   number = "number",
   textarea = "textarea",
+  select = "select",
   radio = "radio",
   date = "date",
   fieldset = "fieldset"
@@ -15,7 +16,8 @@ enum FieldType {
 export interface Option {
   label: string;
   value: string;
-  description: string;
+  description?: string;
+  img?: string;
 }
 
 export type MultiType = string | number | boolean;
@@ -72,6 +74,8 @@ export class VanJsfField extends VanJSComponent {
     return this.isVisibleState.val;
   }
 
+
+
   set isVisible(val: boolean) {
     this.isVisibleState.val = val;
   }
@@ -123,6 +127,31 @@ export class VanJsfField extends VanJSComponent {
           })
         );
         break;
+
+        //TODO: Add select component
+        case FieldType.select:
+
+        el = div(
+          props,
+          label({ for: this.name, style: "margin-right: 5px;", class: this.titleClass ? this.titleClass : '' }, this.label),
+          this.description &&
+          div({ id: `${this.name}-description`, class: this.descriptionClass ? this.descriptionClass : '' }, this.description),
+          select({
+            id: this.name,
+            name: this.name,
+            class: this.class ? this.class : null,
+            oninput: (e: any) => this.handleChange(this, e.target.value),
+          },
+          this.options?.map((opt: any) =>
+            option({class: this.class ? this.class : null, value: opt.value},
+             opt.label,
+             opt.description,
+            )
+          )
+        )
+        );
+        break;
+
       case FieldType.date:
         const calendarInput = input({
           id: this.name,
