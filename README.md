@@ -15,6 +15,16 @@ This library aims to provide a robust and flexible solution for dynamically gene
 - [ ] **Validation Support**: Easily integrate JSON Schema-based validation for seamless user input handling.
 - [ ] **Extensible Architecture**: Add custom widgets, field types, and behaviours as needed.
 
+### Available components
+The currently supported form element types are:
+ - text = "text",
+ - number = "number",
+ - textarea = "textarea",
+ - select = "select",
+ - radio = "radio",
+ - date = "date",
+ - fieldset = "fieldset"
+
 ### Use Cases
 
 - Quickly generate forms for dashboards, admin panels, and dynamic web applications.
