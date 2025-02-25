@@ -1,10 +1,17 @@
 import van, { State } from "vanjs-core";
 import { VanJSComponent } from "./VanJSComponent";
 import pikaday from "pikaday";
+import { basicSetup, EditorView } from "codemirror"
+import { javascript, esLint } from "@codemirror/lang-javascript";
+import { json, jsonParseLinter } from "@codemirror/lang-json";
+import { lintGutter, linter, forEachDiagnostic } from "@codemirror/lint";
+import * as eslint from "eslint-linter-browserify";
+import globals from "globals";
 const { div, p, input, label, textarea, legend, link, fieldset, span, select, option } = van.tags;
 
 enum FieldType {
   text = "text",
+  code = "code",
   number = "number",
   textarea = "textarea",
   select = "select",
@@ -12,7 +19,21 @@ enum FieldType {
   date = "date",
   fieldset = "fieldset"
 }
-
+const eslintConfig = {
+  // eslint configuration
+  languageOptions: {
+    globals: {
+      ...globals.node,
+    },
+    parserOptions: {
+      ecmaVersion: 2022,
+      sourceType: "module",
+    },
+  },
+  rules: {
+    semi: ["error", "never"],
+  },
+};
 export interface Option {
   label: string;
   value: string;
@@ -55,8 +76,49 @@ export class VanJsfField extends VanJSComponent {
   get class(): string {
     return this.field.class as string;
   }
+  get errorClass(): string {
+    return this.field.errorClass as string;
+  }
+  get codemirrorExtension(): Array<any> {
+    const theme = EditorView.theme({
+      '.cm-content, .cm-gutter': {
+        "min-height": "150px",
+      },
+      '.cm-content': {
+        "min-height": "150px",
+      },
+      '.cm-gutters': {
+        margin: '1px',
+      },
+      '.cm-scroller': {
+        overflow: 'auto',
+      },
+      '.cm-wrap': {
+        border: '1px solid silver',
+      },
+    });
+    const extensions = [theme, EditorView.updateListener.of((e) => {
+      this.field.error = null
+      forEachDiagnostic(e.state, (diag) => {
+        if (diag.severity === "error") {
+          this.field.error = diag.message
+        }
+      })
+      this.handleChange(this, e.state.doc.toString())
+    }), basicSetup, lintGutter()]
+    switch (this.field.codemirrorType) {
+      case "json": extensions.push(json(), linter(jsonParseLinter())); break;
+      case "javascript": extensions.push(javascript(), linter(esLint(new eslint.Linter(), eslintConfig))); break;
+      case "typescript": extensions.push(javascript({ typescript: true }), linter(esLint(new eslint.Linter(), eslintConfig))); break;
+      default: extensions.push(javascript(), linter(esLint(new eslint.Linter(), eslintConfig))); break;
+    }
+    return extensions
+  }
   get containerClass(): string {
     return this.field.containerClass as string;
+  }
+  get containerId(): string {
+    return this.field.containerId as string;
   }
   get titleClass(): string {
     return this.field.titleClass as string;
@@ -73,9 +135,6 @@ export class VanJsfField extends VanJSComponent {
   get isVisible(): boolean {
     return this.isVisibleState.val;
   }
-
-
-
   set isVisible(val: boolean) {
     this.isVisibleState.val = val;
   }
@@ -107,7 +166,7 @@ export class VanJsfField extends VanJSComponent {
             value: this.iniVal,
             oninput: (e: any) => this.handleChange(this, e.target.value),
           }),
-          p(() => this.error)
+          p({ class: this.errorClass }, () => this.error)
         );
         break;
 
@@ -124,13 +183,24 @@ export class VanJsfField extends VanJSComponent {
             rows: this.field.rows as number,
             cols: this.field.columns as number,
             oninput: (e: any) => this.handleChange(this, e.target.value),
-          })
+          }),
+          p({ class: this.errorClass }, () => this.error)
         );
         break;
-
-        //TODO: Add select component
-        case FieldType.select:
-
+      case FieldType.code:
+        el = div(
+          props,
+          label({ for: this.name, style: "margin-right: 5px;", class: this.titleClass ? this.titleClass : '' }, this.label),
+          this.description &&
+          div({ id: `${this.name}-description`, class: this.descriptionClass ? this.descriptionClass : '' }, this.description),
+        );
+        new EditorView({
+          doc: new String(this.iniVal).toString(),
+          parent: el,
+          extensions: this.codemirrorExtension
+        });
+        break;
+      case FieldType.select:
         el = div(
           props,
           label({ for: this.name, style: "margin-right: 5px;", class: this.titleClass ? this.titleClass : '' }, this.label),
@@ -142,13 +212,13 @@ export class VanJsfField extends VanJSComponent {
             class: this.class ? this.class : null,
             oninput: (e: any) => this.handleChange(this, e.target.value),
           },
-          this.options?.map((opt: any) =>
-            option({class: this.class ? this.class : null, value: opt.value},
-             opt.label,
-             opt.description,
+            this.options?.map((opt: any) =>
+              option({ class: this.class ? this.class : null, value: opt.value },
+                opt.label,
+                opt.description,
+              )
             )
-          )
-        )
+          ), p({ class: this.errorClass }, () => this.error)
         );
         break;
 
@@ -167,11 +237,13 @@ export class VanJsfField extends VanJSComponent {
             this.description &&
             div({ id: `${this.name}-description`, class: this.descriptionClass ? this.descriptionClass : '' }, this.description),
             calendarInput,
+            p({ class: this.errorClass }, () => this.error),
             link({ rel: "stylesheet", type: "text/css", href: "https://cdn.jsdelivr.net/npm/pikaday/css/pikaday.css" })
           );
         new pikaday({
           field: calendarInput,
           format: 'YYYY/MM/DD',
+          container: el as HTMLElement,
           firstDay: 1,
           toString(date) {
             // you should do formatting based on the passed format,
@@ -203,7 +275,8 @@ export class VanJsfField extends VanJSComponent {
             class: this.class ? this.class : null,
             value: this.iniVal,
             oninput: (e: any) => this.handleChange(this, e.target.value),
-          })
+          }),
+          p({ class: this.errorClass }, () => this.error)
         );
         break;
       case FieldType.fieldset:
@@ -233,7 +306,8 @@ export class VanJsfField extends VanJSComponent {
                 }),
                 opt.label,
                 opt.description
-              )
+              ),
+              p({ class: this.errorClass }, () => this.error)
             )
           )
         );

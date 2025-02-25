@@ -28,7 +28,9 @@ class VanJsfForm {
     this.config = config;
     this.isValid = isValid || undefined
     // Working with parameters
+    const initialValues = { ...config?.initialValues };
     this.headlessForm = createHeadlessForm(jsonSchema, config);
+    this.config.initialValues = initialValues;
     // Read documentation about `getFieldsAndValuedFromJsf` method below
     const { vanJsfFields, formValues } = this.getFieldsAndValuesFromJsf(
       this.headlessForm,
@@ -69,26 +71,32 @@ class VanJsfForm {
     initialValues: Record<string, any>
   ): { vanJsfFields: VanJsfField[]; formValues: Record<string, any> } {
     const fields: Fields = headlessForm.fields;
-    console.log(fields)
     const formValues: Record<string, any> = {};
+    const values = { ...initialValues }
+    console.log(values)
     const vanJsfFields: VanJsfField[] = this.processFields(fields, initialValues, formValues);
 
     return { vanJsfFields, formValues };
   }
 
   handleFieldChange(field: VanJsfField, value: MultiType) {
-    console.log(`Field ${field.name} changed to ${value}`);
+    console.log(value)
+    console.log(field.name)
     this.formValues[field.name] = value;
     const { formErrors } = this.headlessForm.handleValidation(this.formValues);
+    let extraError = false
     console.log("formErrors", formErrors);
     this.formFields.forEach((f) => {
       f.isVisible = f.field.isVisible as boolean;
       f.error = formErrors?.[f.name] ?? "";
+      console.log(f.field.error)
+      if (f.field.error) {
+        extraError = true
+      }
     });
     if (this.isValid) {
-      if (formErrors) {
-        if (this.isValid)
-          this.isValid.val = false
+      if (formErrors || extraError) {
+        this.isValid.val = false
       } else {
         this.isValid.val = true
       }
@@ -97,13 +105,13 @@ class VanJsfForm {
   processFields(fields: any[], initialValues: any, formValues: any, parentPath: string = ""): VanJsfField[] {
     return fields.map((field) => {
       // Construct the full path for the field
+
       const fieldPath: string = parentPath ? `${parentPath}.${field.name}` : field.name;
       // Determine the initial value for the field
       const initVal = initialValues[fieldPath] || field.default || "";
       // Store the initial value in the form values map
       formValues[fieldPath] = initVal;
-      console.log(formValues)
-      console.log(initialValues)
+
       // Check if the field has nested fields and process them recursively
       if (field.fields && field.fields.length > 0) {
         field.fields = this.processFields(field.fields, initialValues, formValues, fieldPath);
