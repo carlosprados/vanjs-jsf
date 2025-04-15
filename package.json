@@ -8,7 +8,7 @@
     "form",
     "ui-library"
   ],
-  "version": "0.0.12",
+  "version": "0.0.13",
   "author": {
     "name": "Carlos Prados",
     "email": "carlos.prados@gmail.com"
@@ -41,6 +41,7 @@
     "eslint4b-prebuilt": "^6.7.2",
     "globals": "^15.15.0",
     "pikaday": "^1.8.2",
+    "van-ui-extended": "^0.0.6",
     "vanjs-core": "^1.5.3",
     "vanjs-ext": "^0.6.2"
   },

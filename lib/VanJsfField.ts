@@ -6,12 +6,14 @@ import { javascript, esLint } from "@codemirror/lang-javascript";
 import { json, jsonParseLinter } from "@codemirror/lang-json";
 import { lintGutter, linter, forEachDiagnostic } from "@codemirror/lint";
 import * as eslint from "eslint-linter-browserify";
-import globals from "globals";
+import { CronComponent } from "van-ui-extended";
+import "van-ui-extended/dist/index.css";
 const { div, p, input, label, textarea, legend, link, fieldset, span, select, option } = van.tags;
-
+import globals from "globals";
 enum FieldType {
   text = "text",
   code = "code",
+  cron = "cron",
   number = "number",
   textarea = "textarea",
   select = "select",
@@ -262,6 +264,29 @@ export class VanJsfField extends VanJSComponent {
             return new Date(year, month, day);
           }
         });
+        break;
+      case FieldType.cron:
+        el =
+          div(
+            props,
+            label({ for: this.name, style: "margin-right: 5px;", class: this.titleClass ? this.titleClass : '' }, this.label),
+            this.description &&
+
+            div({ id: `${this.name}-description`, class: this.descriptionClass ? this.descriptionClass : '' }, this.description),
+            p({ class: this.errorClass }, () => this.error),
+            () => {
+              let ele: any
+              if (CronComponent) {
+                ele = new CronComponent() || null
+                ele.setAttribute("color", "d58512")
+                ele.setAttribute("value", this.iniVal.toString())
+                ele.oninput = (e: any) => this.handleChange(this, e.detail.value)
+              }
+              return ele;
+            }
+
+          );
+
         break;
       case FieldType.number:
         el = div(
