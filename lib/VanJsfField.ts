@@ -279,6 +279,7 @@ export class VanJsfField extends VanJSComponent {
               if (CronComponent) {
                 ele = new CronComponent() || null
                 ele.setAttribute("color", "d58512")
+                ele.setAttribute("extraClass", this.class ? this.class : "")
                 ele.setAttribute("value", this.iniVal.toString())
                 ele.oninput = (e: any) => this.handleChange(this, e.detail.value)
               }
