@@ -84,10 +84,7 @@ export class VanJsfField extends VanJSComponent {
   get codemirrorExtension(): Array<any> {
     const theme = EditorView.theme({
       '.cm-content, .cm-gutter': {
-        "min-height": "150px",
-      },
-      '.cm-content': {
-        "min-height": "150px",
+        minHeight: this.field["min-height"] && typeof this.field["min-height"] === "string" ? this.field["min-height"] : "150px",
       },
       '.cm-gutters': {
         margin: '1px',

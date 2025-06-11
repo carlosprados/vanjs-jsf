@@ -83,6 +83,7 @@ class VanJsfForm {
     console.log(value)
     console.log(field.name)
     this.formValues[field.name] = value;
+    this.config.formValues = this.formValues
     const { formErrors } = this.headlessForm.handleValidation(this.formValues);
     let extraError = false
     console.log("formErrors", formErrors);
@@ -101,6 +102,7 @@ class VanJsfForm {
         this.isValid.val = true
       }
     }
+
   }
   processFields(fields: any[], initialValues: any, formValues: any, parentPath: string = ""): VanJsfField[] {
     return fields.map((field) => {
