@@ -7,6 +7,7 @@ import { json, jsonParseLinter } from "@codemirror/lang-json";
 import { lintGutter, linter, forEachDiagnostic } from "@codemirror/lint";
 import * as eslint from "eslint-linter-browserify";
 import { CronComponent } from "van-ui-extended";
+import { dracula } from 'thememirror';
 import "van-ui-extended/dist/index.css";
 const { div, p, input, label, textarea, legend, link, fieldset, span, select, option } = van.tags;
 import globals from "globals";
@@ -95,8 +96,11 @@ export class VanJsfField extends VanJSComponent {
       '.cm-wrap': {
         border: '1px solid silver',
       },
+
+    }, {
+      dark: true
     });
-    const extensions = [theme, EditorView.updateListener.of((e) => {
+    const extensions = [dracula, EditorView.updateListener.of((e) => {
       this.field.error = null
       forEachDiagnostic(e.state, (diag) => {
         if (diag.severity === "error") {
