@@ -13,6 +13,7 @@ vanjs-jsf is a TypeScript library that generates dynamic UI forms from JSON Sche
 - **Never push without explicit user approval.** Always ask and wait for confirmation before any `git push`.
 - Branch naming: `feature/<description>` or `fix/<description>`.
 - Merge flow: feature branch → develop → main.
+- **Always create a git tag** (`vX.Y.Z`) on `main` when publishing to npm.
 
 ## Commands
 
