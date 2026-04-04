@@ -94,6 +94,30 @@ Install the library from the npm registry:
 
   ```
 
+## Development
+
+```bash
+npm install          # Install dependencies
+npm run dev          # Start Vite dev server (port 3030)
+npm run build        # Bundle with esbuild → dist/index.js
+npm run types        # Generate type declarations → dist/*.d.ts
+npm run lint         # Run ESLint
+npm run lint:fix     # Run ESLint with auto-fix
+```
+
+## Publishing
+
+1. Update the version in `package.json`
+2. Run the publish script:
+
+```bash
+./publish.sh
+```
+
+This cleans `dist/`, rebuilds the bundle and type declarations, and publishes to npm.
+
+The package is available at: https://www.npmjs.com/package/vanjs-jsf
+
 ## Contributing
 
 Contributions are welcome! Please submit a pull request if you have ideas, feedback, or improvements. Your contributions will help make this library more robust and useful for the community.
