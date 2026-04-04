@@ -29,6 +29,7 @@ npm run lint:fix # Run ESLint with auto-fix
 - **esbuild** (build.js): bundles `lib/index.ts` → `dist/index.js`. Externalizes `@remoteoss/json-schema-form`, `vanjs-core`, `vanjs-ext`.
 - **TypeScript**: strict mode, ESNext target/module, declarations emitted to `dist/`.
 - **publish.sh**: removes dist/, runs build + types, then `npm publish --access public`.
+- **npm package**: https://www.npmjs.com/package/vanjs-jsf
 
 ## Architecture
 
