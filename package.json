@@ -25,10 +25,12 @@
   "scripts": {
     "build": "node build.js",
     "types": "tsc",
-    "dev": "vite"
+    "dev": "vite",
+    "lint": "eslint lib/",
+    "lint:fix": "eslint lib/ --fix"
   },
   "peerDependencies": {
-    "esbuild": "^0.24.2",
+    "esbuild": "^0.25.0",
     "typescript": "^5.7.3"
   },
   "dependencies": {
@@ -45,7 +47,10 @@
     "vanjs-ext": "^0.6.2"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/pikaday": "^1.7.9",
+    "eslint": "^10.2.0",
+    "typescript-eslint": "^8.58.0",
     "vite": "^6.0.9"
   }
 }
