@@ -14,12 +14,12 @@ const { form } = van.tags;
 class VanJsfForm {
   schema: JSONSchemaObjectType;
   config: Record<string, any>;
-  isValid: State<Boolean> | undefined;
+  isValid: State<boolean> | undefined;
   headlessForm: HeadlessFormOutput;
   formFields: VanJsfField[];
   formValues: Record<string, any>;
 
-  constructor(jsonSchema: JSONSchemaObjectType, config: Record<string, any>, isValid?: State<Boolean>) {
+  constructor(jsonSchema: JSONSchemaObjectType, config: Record<string, any>, isValid?: State<boolean>) {
     // Bind methods to instance. Needed to pass functions as props to child components
     //this.handleSubmit = this.handleSubmit.bind(this);
     this.handleFieldChange = this.handleFieldChange.bind(this);
@@ -72,25 +72,19 @@ class VanJsfForm {
   ): { vanJsfFields: VanJsfField[]; formValues: Record<string, any> } {
     const fields: Fields = headlessForm.fields;
     const formValues: Record<string, any> = {};
-    const values = { ...initialValues }
-    console.log(values)
     const vanJsfFields: VanJsfField[] = this.processFields(fields, initialValues, formValues);
 
     return { vanJsfFields, formValues };
   }
 
   handleFieldChange(field: VanJsfField, value: MultiType) {
-    console.log(value)
-    console.log(field.name)
     this.formValues[field.name] = value;
     this.config.formValues = this.formValues
     const { formErrors } = this.headlessForm.handleValidation(this.formValues);
-    let extraError = false
-    console.log("formErrors", formErrors);
+    let extraError = false;
     this.formFields.forEach((f) => {
       f.isVisible = f.field.isVisible as boolean;
       f.error = formErrors?.[f.name] ?? "";
-      console.log(f.field.error)
       if (f.field.error) {
         extraError = true
       }
@@ -131,17 +125,11 @@ export function jsform(
   if (!attributes.schema) {
     throw new Error("JSON Schema is required");
   }
-  let config = attributes.config;
-  let isValid = attributes.isValid;
-  if (!config) {
-    config = { initialValues: {}, formValues: {} };
-  } else if (!config.initialValues) {
-    config.initialValues = {};
-  } else if (!config.formValues) {
-    config.formValues = {};
-  }
+  const config = attributes.config ?? { initialValues: {}, formValues: {} };
+  if (!config.initialValues) config.initialValues = {};
+  if (!config.formValues) config.formValues = {};
+  const isValid = attributes.isValid;
   const vanJsfForm: VanJsfForm = new VanJsfForm(attributes.schema, config, isValid);
-  console.log(vanJsfForm)
   const fields: Element[] = vanJsfForm.formFields.map((field: VanJsfField) =>
     field.render()
   );
@@ -150,13 +138,13 @@ export function jsform(
   const handleSubmit = (e: Event) => {
     e.preventDefault();
     config.formValues = vanJsfForm.formValues;
-    originalOnSubmit && originalOnSubmit(e);
+    if (originalOnSubmit) originalOnSubmit(e);
   };
   const originalOnChange = attributes.onchange;
   const handleChange = (e: Event) => {
     e.preventDefault();
     config.formValues = vanJsfForm.formValues;
-    originalOnChange && originalOnChange(vanJsfForm, e);
+    if (originalOnChange) originalOnChange(vanJsfForm, e);
   };
   attributes.onsubmit = handleSubmit;
   attributes.onchange = handleChange;

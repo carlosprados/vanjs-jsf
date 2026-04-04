@@ -6,23 +6,24 @@
 
 This library aims to provide a robust and flexible solution for dynamically generating user interface (UI) forms using JSON Schema definitions. It is built on **TypeScript** for type safety and leverages the powerful [JSON Schema Form Headless UI](https://github.com/remoteoss/json-schema-form) framework, which you can find documented [here](https://json-schema-form.vercel.app). It ensures a lightweight, modern, accessible, and customizable form-building experience.
 
-### Features to implement
+### Features
 
-- [ ] **Dynamic Form Generation**: Create forms directly from JSON Schema, reducing repetitive coding tasks.
-- [ ] **Customizable**: Tailor form styles, layouts, and behaviours to meet specific UI/UX requirements.
-- [ ] **Headless UI Integration**: Utilize Headless UI's components for accessible and modern interfaces.
-- [ ] **TypeScript-first Approach**: Enjoy strong typing and enhanced developer experience with TypeScript.
-- [ ] **Validation Support**: Easily integrate JSON Schema-based validation for seamless user input handling.
+- [x] **Dynamic Form Generation**: Create forms directly from JSON Schema, reducing repetitive coding tasks.
+- [x] **Customizable**: Tailor form styles, layouts, and behaviours to meet specific UI/UX requirements.
+- [x] **Headless UI Integration**: Utilize Headless UI's components for accessible and modern interfaces.
+- [x] **TypeScript-first Approach**: Enjoy strong typing and enhanced developer experience with TypeScript.
+- [x] **Validation Support**: Easily integrate JSON Schema-based validation for seamless user input handling.
 - [ ] **Extensible Architecture**: Add custom widgets, field types, and behaviours as needed.
 
 ### Available components
 The currently supported form element types are:
- - text = "text",
- - number = "number",
- - textarea = "textarea",
- - select = "select",
- - radio = "radio",
- - date = "date",
+ - text = "text"
+ - number = "number"
+ - textarea = "textarea"
+ - select = "select"
+ - radio = "radio"
+ - date = "date" (Pikaday)
+ - code = "code" (CodeMirror with JSON, JavaScript, TypeScript support)
  - fieldset = "fieldset"
 
 ### Use Cases
@@ -35,13 +36,13 @@ The currently supported form element types are:
 
 1. Install the library:
 
-We're working on publishing the library in the `nmp` repository.
+Install the library from the npm registry:
 
   ```bash
   npm install vanjs-jsf
   ```
 
-1. Import it in your project & define your JSON schema + config:
+2. Import it in your project & define your JSON schema + config:
 
   ```typescript
   import { jsform } from 'vanjs-jsf';
@@ -64,7 +65,7 @@ We're working on publishing the library in the `nmp` repository.
   };
    ```
 
-1. Render the form using VanJS UI framework & handle form submit.
+3. Render the form using VanJS UI framework & handle form submit.
 
   This library will call the `onsubmit` handler set using the VanJS `props` passing the original source event.
 
