@@ -36,62 +36,69 @@ The currently supported form element types are:
 
 1. Install the library:
 
-Install the library from the npm registry:
-
   ```bash
   npm install vanjs-jsf
   ```
 
-2. Import it in your project & define your JSON schema + config:
+2. Import and define your JSON Schema with `x-jsf-presentation` hints:
 
   ```typescript
-  import { jsform } from 'vanjs-jsf';
+  import van from "vanjs-core";
+  import { jsform } from "vanjs-jsf";
+
+  const { div, h1, p, button } = van.tags;
 
   const schema = {
-    type: 'object',
+    type: "object",
     properties: {
-      userName: { type: 'string', title: 'Name' },
-      age: { type: 'number', title: 'Age' },
+      userName: {
+        type: "string",
+        title: "Name",
+        "x-jsf-presentation": { inputType: "text" },
+      },
+      age: {
+        type: "number",
+        title: "Age",
+        "x-jsf-presentation": { inputType: "number" },
+      },
     },
+    required: ["userName"],
+    "x-jsf-order": ["userName", "age"],
   };
+  ```
 
-  // Initial values to fill the form
+3. Create a config with initial values and render the form:
+
+  ```typescript
   const initialValues = { userName: "Simon" };
-  // JSON Schema Form config
   const config = {
     strictInputType: false,
     initialValues: initialValues,
     formValues: initialValues,
   };
-   ```
 
-3. Render the form using VanJS UI framework & handle form submit.
-
-  This library will call the `onsubmit` handler set using the VanJS `props` passing the original source event.
-
-  ```typescript
   const handleOnSubmit = (e: Event) => {
     e.preventDefault();
-    const values = jsfConfig.formValues;
-    alert(`Submitted successfully: ${JSON.stringify(values, null, 2)}`);
-    console.log("Submitted!", values);
+    const values = config.formValues;
+    alert(`Submitted: ${JSON.stringify(values, null, 2)}`);
   };
 
-   // Add the JSON Schema Form to an VanJS element 
-  div(
+  van.add(
+    document.body,
+    div(
       h1("json-schema-form + VanJS"),
-      p("This demo uses VanJS without any other form library."),
+      p("Dynamic form generated from JSON Schema."),
       jsform(
         {
           name: "my-jsf-form",
-          schema: schema, // JSON Schema defined previously
-          config: config, // JSON Schema Form configuration
+          schema: schema,
+          config: config,
           onsubmit: handleOnSubmit,
         },
         button({ type: "submit" }, "Submit")
       )
-    );
-
+    )
+  );
   ```
 
 ## Development
