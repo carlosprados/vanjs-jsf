@@ -1,2 +1,2 @@
 export { jsform } from "./VanJsfForm";
-export type { JsfTheme } from "./theme";
+export type { JsfTheme, JsfLayout } from "./theme";
