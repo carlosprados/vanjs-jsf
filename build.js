@@ -1,5 +1,6 @@
 //const esbuild = require("esbuild");
 import esbuild from "esbuild";
+import { copyFileSync, mkdirSync } from "fs";
 
 async function build() {
   const ctx = await esbuild.context({
@@ -26,6 +27,9 @@ async function build() {
     // Ejecuta una compilación única
     await ctx.rebuild();
     ctx.dispose();
+    // Copy default CSS to dist
+    mkdirSync("dist", { recursive: true });
+    copyFileSync("lib/jsf-defaults.css", "dist/jsf-defaults.css");
   }
 }
 
