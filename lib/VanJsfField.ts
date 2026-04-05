@@ -320,7 +320,12 @@ export class VanJsfField extends VanJSComponent {
       case FieldType.file: {
         const accept = (this.field.accept as string) || "";
         const maxSizeMB = this.field.maxSizeMB as number | undefined;
-        const readAs = (this.field.readAs as string) || "text";
+        const readAs = (this.field.readAs as string) || "auto";
+
+        const TEXT_EXTENSIONS = new Set([
+          "json", "csv", "tsv", "txt", "xml", "yaml", "yml",
+          "log", "md", "html", "css", "js", "ts", "sql", "env",
+        ]);
 
         // Reactive states
         const fileNameState = van.state("");
@@ -356,8 +361,8 @@ export class VanJsfField extends VanJSComponent {
           reader.onload = () => {
             readingState.val = false;
             let result = reader.result as string;
-            if (readAs === "arrayBuffer" && reader.result instanceof ArrayBuffer) {
-              // Base64-encode the ArrayBuffer
+            if (reader.result instanceof ArrayBuffer) {
+              // Convert binary to base64 (applies to "arrayBuffer" and "auto" for binary files)
               const bytes = new Uint8Array(reader.result);
               let binary = "";
               for (let i = 0; i < bytes.byteLength; i++) {
@@ -376,6 +381,13 @@ export class VanJsfField extends VanJSComponent {
             reader.readAsDataURL(file);
           } else if (readAs === "arrayBuffer") {
             reader.readAsArrayBuffer(file);
+          } else if (readAs === "auto") {
+            const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
+            if (TEXT_EXTENSIONS.has(ext)) {
+              reader.readAsText(file);
+            } else {
+              reader.readAsArrayBuffer(file);
+            }
           } else {
             reader.readAsText(file);
           }
