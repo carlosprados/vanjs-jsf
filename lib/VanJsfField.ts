@@ -1,5 +1,6 @@
 import van, { State } from "vanjs-core";
 import { VanJSComponent } from "./VanJSComponent";
+import { JsfTheme, resolve } from "./theme";
 import pikaday from "pikaday";
 import { basicSetup, EditorView } from "codemirror"
 import { javascript, esLint } from "@codemirror/lang-javascript";
@@ -51,6 +52,7 @@ export class VanJsfField extends VanJSComponent {
   handleChange: (field: VanJsfField, value: MultiType) => void;
   isVisibleState: State<boolean>;
   errorState: State<string>;
+  theme: JsfTheme;
   /** Used by file fields to pass file metadata to formValues */
   fileNameValue: string = "";
   fileSizeValue: string = "";
@@ -58,13 +60,15 @@ export class VanJsfField extends VanJSComponent {
   constructor(
     field: Record<string, unknown>,
     initVal: MultiType,
-    handleChange: (field: VanJsfField, value: MultiType) => void
+    handleChange: (field: VanJsfField, value: MultiType) => void,
+    theme: JsfTheme = {},
   ) {
     super();
     this.field = field;
     this.name = field.name as string;
     this.iniVal = initVal;
     this.handleChange = handleChange;
+    this.theme = theme;
     this.isVisibleState = van.state(this.field.isVisible as boolean);
     this.errorState = van.state("");
   }
@@ -81,9 +85,12 @@ export class VanJsfField extends VanJSComponent {
   get errorClass(): string {
     return this.field.errorClass as string;
   }
+  get isRequired(): boolean {
+    return this.field.required as boolean ?? false;
+  }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   get codemirrorExtension(): Array<any> {
-    const theme = EditorView.theme({
+    const cmTheme = EditorView.theme({
       '.cm-content, .cm-gutter': {
         "min-height": "150px",
       },
@@ -100,7 +107,7 @@ export class VanJsfField extends VanJSComponent {
         border: '1px solid silver',
       },
     });
-    const extensions = [theme, EditorView.updateListener.of((e) => {
+    const extensions = [cmTheme, EditorView.updateListener.of((e) => {
       this.field.error = null
       forEachDiagnostic(e.state, (diag) => {
         if (diag.severity === "error") {
@@ -149,54 +156,75 @@ export class VanJsfField extends VanJSComponent {
   set error(val: string) {
     this.errorState.val = val;
   }
+
+  private renderLabel(): Element {
+    const cls = resolve(this.titleClass, this.theme.label);
+    return label(
+      { for: this.name, class: cls },
+      this.label,
+      this.isRequired
+        ? span({ class: this.theme.requiredIndicator || "" }, " *")
+        : null,
+    );
+  }
+
+  private renderDescription(): Element | null {
+    if (!this.description) return null;
+    return div({
+      id: `${this.name}-description`,
+      class: resolve(this.descriptionClass, this.theme.description),
+    }, this.description);
+  }
+
+  private renderError(): Element {
+    return p({ class: resolve(this.errorClass, this.theme.error) }, () => this.error);
+  }
+
   render(): Element {
     let el: Element;
+    const baseContainer = resolve(this.containerClass, this.theme.container);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const props: Record<string, any> = {
-      style: () => (this.isVisible ? "display: block" : "display: none"),
-      class: this.containerClass || ''
+      class: () => this.isVisible ? baseContainer : `${baseContainer} jsf-hidden`.trim(),
     };
     switch (this.inputType) {
       case FieldType.text:
         el = div(
           props,
-          label({ for: this.name, style: "margin-right: 5px;", class: this.titleClass || '' }, this.label),
-          this.description &&
-          div({ id: `${this.name}-description`, class: this.descriptionClass || '' }, this.description),
+          this.renderLabel(),
+          this.renderDescription(),
           input({
             id: this.name,
             type: "text",
-            class: this.class || '',
+            class: resolve(this.class, this.theme.input),
             value: this.iniVal,
             oninput: (e: Event) => this.handleChange(this, (e.target as HTMLInputElement).value),
           }),
-          p({ class: this.errorClass }, () => this.error)
+          this.renderError(),
         );
         break;
 
       case FieldType.textarea:
         el = div(
           props,
-          label({ for: this.name, style: "margin-right: 5px;", class: this.titleClass || '' }, this.label),
-          this.description &&
-          div({ id: `${this.name}-description`, class: this.descriptionClass || '' }, this.description),
+          this.renderLabel(),
+          this.renderDescription(),
           textarea({
             id: this.name,
             name: this.name,
-            class: this.class || '',
+            class: resolve(this.class, this.theme.textarea),
             rows: this.field.rows as number,
             cols: this.field.columns as number,
             oninput: (e: Event) => this.handleChange(this, (e.target as HTMLTextAreaElement).value),
           }),
-          p({ class: this.errorClass }, () => this.error)
+          this.renderError(),
         );
         break;
       case FieldType.code:
         el = div(
           props,
-          label({ for: this.name, style: "margin-right: 5px;", class: this.titleClass || '' }, this.label),
-          this.description &&
-          div({ id: `${this.name}-description`, class: this.descriptionClass || '' }, this.description),
+          this.renderLabel(),
+          this.renderDescription(),
         );
         new EditorView({
           doc: String(this.iniVal),
@@ -207,22 +235,22 @@ export class VanJsfField extends VanJSComponent {
       case FieldType.select:
         el = div(
           props,
-          label({ for: this.name, style: "margin-right: 5px;", class: this.titleClass || '' }, this.label),
-          this.description &&
-          div({ id: `${this.name}-description`, class: this.descriptionClass || '' }, this.description),
+          this.renderLabel(),
+          this.renderDescription(),
           select({
             id: this.name,
             name: this.name,
-            class: this.class || '',
+            class: resolve(this.class, this.theme.select),
             oninput: (e: Event) => this.handleChange(this, (e.target as HTMLSelectElement).value),
           },
             this.options?.map((opt: Option) =>
-              option({ class: this.class || '', value: opt.value },
+              option({ class: this.theme.option || "", value: opt.value },
                 opt.label,
                 opt.description,
               )
             )
-          ), p({ class: this.errorClass }, () => this.error)
+          ),
+          this.renderError(),
         );
         break;
 
@@ -230,18 +258,17 @@ export class VanJsfField extends VanJSComponent {
         const calendarInput = input({
           id: this.name,
           type: "text",
-          class: this.class || '',
+          class: resolve(this.class, this.theme.input),
           value: this.iniVal,
           onchange: (e: Event) => this.handleChange(this, (e.target as HTMLInputElement).value),
         });
         el =
           div(
             props,
-            label({ for: this.name, style: "margin-right: 5px;", class: this.titleClass || '' }, this.label),
-            this.description &&
-            div({ id: `${this.name}-description`, class: this.descriptionClass || '' }, this.description),
+            this.renderLabel(),
+            this.renderDescription(),
             calendarInput,
-            p({ class: this.errorClass }, () => this.error),
+            this.renderError(),
             // External CDN dependency for Pikaday CSS — consider bundling for production
             link({ rel: "stylesheet", type: "text/css", href: "https://cdn.jsdelivr.net/npm/pikaday/css/pikaday.css" })
           );
@@ -269,52 +296,58 @@ export class VanJsfField extends VanJSComponent {
       case FieldType.number:
         el = div(
           props,
-          label({ for: this.name, style: "margin-right: 5px;", class: this.titleClass || '' }, this.label),
-          this.description &&
-          div({ id: `${this.name}-description`, class: this.descriptionClass || '' }, this.description),
+          this.renderLabel(),
+          this.renderDescription(),
           input({
             id: this.name,
             type: "number",
-            class: this.class || '',
+            class: resolve(this.class, this.theme.input),
             value: this.iniVal,
             oninput: (e: Event) => {
               const val = (e.target as HTMLInputElement).value;
               this.handleChange(this, val === "" ? "" : Number(val));
             },
           }),
-          p({ class: this.errorClass }, () => this.error)
+          this.renderError(),
         );
         break;
       case FieldType.fieldset:
         el = div(
           props,
-          fieldset(legend({ class: this.titleClass || '' }, this.label), this.description &&
-            span({ id: `${this.name}-description`, class: this.descriptionClass || '' }, this.description), this.isVanJsfFieldArray(this.field.fields) ? this.field.fields.map((field: VanJsfField) =>
-              field.render()
-            ) : null)
+          fieldset(
+            { class: this.theme.fieldset || "" },
+            legend({ class: resolve(this.titleClass, this.theme.legend || this.theme.label) }, this.label),
+            this.renderDescription(),
+            this.isVanJsfFieldArray(this.field.fields)
+              ? this.field.fields.map((field: VanJsfField) => field.render())
+              : null,
+          ),
         );
         break;
       case FieldType.radio:
         el = div(
-          legend({ class: this.titleClass || '' }, this.label),
-          this.description && div(this.description),
+          props,
+          legend({ class: resolve(this.titleClass, this.theme.legend || this.theme.label) }, this.label),
+          this.renderDescription(),
           div(
+            { class: this.theme.radioGroup || "" },
             this.options?.map((opt: Option) =>
               label(
+                { class: this.theme.radioLabel || "" },
                 input({
                   type: "radio",
                   name: this.name,
-                  class: this.class || '',
+                  class: resolve(this.class, this.theme.radioInput),
                   value: opt.value,
                   checked: this.iniVal === opt.value,
                   onchange: (e: Event) => this.handleChange(this, (e.target as HTMLInputElement).value),
                 }),
                 opt.label,
-                opt.description
+                opt.description,
               )
             )
           ),
-          p({ class: this.errorClass }, () => this.error)
+          this.renderError(),
         );
         break;
       case FieldType.file: {
@@ -414,12 +447,12 @@ export class VanJsfField extends VanJSComponent {
           },
         });
 
+        const dzBase = this.theme.dropZone || "jsf-dropzone";
+        const dzActive = this.theme.dropZoneActive || "jsf-dropzone-active";
+
         const dropZone = div(
           {
-            style: () => {
-              const over = dragOverState.val;
-              return `border: 2px dashed ${over ? "#4a90d9" : "#ccc"}; border-radius: 8px; padding: 24px; text-align: center; cursor: pointer; transition: border-color 0.2s; background: ${over ? "#f0f7ff" : "transparent"};`;
-            },
+            class: () => dragOverState.val ? `${dzBase} ${dzActive}` : dzBase,
             ondragover: (e: DragEvent) => { e.preventDefault(); dragOverState.val = true; },
             ondragleave: () => { dragOverState.val = false; },
             ondrop: (e: DragEvent) => {
@@ -430,9 +463,12 @@ export class VanJsfField extends VanJSComponent {
             },
             onclick: () => fileInput.click(),
           },
-          p({ style: "margin: 0; color: #666;" }, accept
-            ? `Drop a file here or click to browse (${accept})`
-            : "Drop a file here or click to browse"),
+          p(
+            { class: this.theme.dropZoneText || "jsf-dropzone-text" },
+            accept
+              ? `Drop a file here or click to browse (${accept})`
+              : "Drop a file here or click to browse",
+          ),
         );
 
         const fileInfoBar = (): Element => {
@@ -440,12 +476,12 @@ export class VanJsfField extends VanJSComponent {
             const name = fileNameState.val;
             if (!name) return div();
             return div(
-              { style: "margin-top: 8px; display: flex; align-items: center; gap: 8px;" },
-              strong(name),
-              small({ style: "color: #888;" }, `(${fileSizeState.val})`),
+              { class: this.theme.fileInfoBar || "jsf-file-info" },
+              strong({ class: this.theme.fileName || "" }, name),
+              small({ class: this.theme.fileSize || "jsf-file-size" }, `(${fileSizeState.val})`),
               button({
                 type: "button",
-                style: "cursor: pointer; background: none; border: 1px solid #ccc; border-radius: 4px; padding: 2px 8px; font-size: 0.85em;",
+                class: this.theme.fileClearButton || "jsf-file-clear",
                 onclick: (e: Event) => {
                   e.stopPropagation();
                   clearFile();
@@ -459,20 +495,19 @@ export class VanJsfField extends VanJSComponent {
         const readingIndicator = (): Element => {
           return div(() => {
             if (!readingState.val) return div();
-            return div({ style: "margin-top: 8px; color: #666;" }, "Reading file...");
+            return div({ class: this.theme.fileReading || "jsf-file-reading" }, "Reading file...");
           });
         };
 
         el = div(
           props,
-          label({ for: this.name, style: "margin-right: 5px;", class: this.titleClass || '' }, this.label),
-          this.description &&
-          div({ id: `${this.name}-description`, class: this.descriptionClass || '' }, this.description),
+          this.renderLabel(),
+          this.renderDescription(),
           fileInput,
           dropZone,
           fileInfoBar(),
           readingIndicator(),
-          p({ class: this.errorClass }, () => this.error),
+          this.renderError(),
         );
         break;
       }
@@ -488,4 +523,3 @@ export class VanJsfField extends VanJSComponent {
     return Array.isArray(fields) && fields.every(field => field instanceof VanJsfField);
   }
 }
-
