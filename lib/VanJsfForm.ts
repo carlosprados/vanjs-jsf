@@ -91,6 +91,7 @@ class VanJsfForm {
       this.formValues[field.name + "__fileSize"] = field.fileSizeValue;
       this.formValues[field.name + "__fileType"] = field.fileTypeValue;
     }
+    this.config.formValues = this.formValues
     const { formErrors } = this.headlessForm.handleValidation(this.formValues);
     let extraError = false;
     this.formFields.forEach((f) => {
@@ -107,6 +108,7 @@ class VanJsfForm {
         this.isValid.val = true
       }
     }
+
   }
   processFields(fields: any[], initialValues: any, formValues: any, parentPath: string = ""): VanJsfField[] {
     return fields.map((field) => {

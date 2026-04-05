@@ -10,6 +10,7 @@ This library provides a robust and flexible solution for dynamically generating 
 
 - [x] **Dynamic Form Generation**: Create forms directly from JSON Schema, reducing repetitive coding tasks.
 - [x] **Theming API**: Inject CSS classes for every form element via a `theme` object — works with Tailwind, Bootstrap, or any CSS framework.
+- [x] **Layout Map**: Control per-field spatial distribution (e.g. grid column spans) without coupling CSS classes to JSON Schema.
 - [x] **Customizable**: Tailor form styles, layouts, and behaviours to meet specific UI/UX requirements.
 - [x] **Headless UI Integration**: Utilize Headless UI's components for accessible and modern interfaces.
 - [x] **TypeScript-first Approach**: Enjoy strong typing and enhanced developer experience with TypeScript.
@@ -219,6 +220,75 @@ const formEl = jsform({
 | `fileClearButton`   | "Clear" button                                         |
 | `fileReading`       | "Reading file..." indicator                            |
 
+## Layout
+
+The `layout` attribute lets you assign extra CSS classes to specific field containers by name, without modifying the JSON Schema. This is useful for controlling column spans in CSS grid layouts.
+
+```typescript
+import { jsform, JsfTheme, JsfLayout } from "vanjs-jsf";
+
+const theme: JsfTheme = {
+  container: "mb-4",
+  input: "w-full border rounded px-3 py-2",
+  label: "block text-sm font-medium mb-1",
+};
+
+const layout: JsfLayout = {
+  host: "col-span-2",    // full row
+  dbname: "col-span-2",  // full row
+  // port, user, password, schema → no entry → default 1 column
+};
+
+const formEl = jsform({
+  schema: connectionSchema,
+  config: { initialValues: {}, formValues: {} },
+  theme,
+  layout,
+});
+```
+
+Wrap the form in a grid container to activate the column distribution:
+
+```css
+.jsf-grid > form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 1rem;
+}
+```
+
+```typescript
+const { div } = van.tags;
+van.add(document.body, div({ class: "jsf-grid" }, formEl));
+```
+
+This produces a layout like:
+
+```text
+┌─────────────── host ────────────────┐
+│ 192.168.1.176                       │
+├────── port ──────┬──── user ────────┤
+│ 5432             │ wolfops          │
+├──── password ────┬──── schema ──────┤
+│ ••••••••         │ public           │
+├─────────────── dbname ──────────────┤
+│ wolfops_dev                         │
+└─────────────────────────────────────┘
+```
+
+### Nested fields
+
+For fields inside a fieldset, `layout` supports both the full path and the short name:
+
+```typescript
+const layout: JsfLayout = {
+  "connection.host": "col-span-2",  // by full path
+  port: "col-span-1",              // by short name (also works for nested)
+};
+```
+
+The full path (`fieldset.fieldName`) is checked first, then the short name.
+
 ### Class resolution order
 
 For each element, the resolved class follows this priority:
@@ -226,6 +296,8 @@ For each element, the resolved class follows this priority:
 1. **Per-field class** from `x-jsf-presentation` (e.g. `class`, `titleClass`, `containerClass`)
 2. **Theme class** from the `theme` object
 3. **Empty string** (no class applied)
+
+Layout classes are appended *after* the resolved container class, so they combine with both per-field and theme classes.
 
 ### Visibility
 
