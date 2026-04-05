@@ -16,8 +16,6 @@ async function build() {
       "vanjs-core",
       "vanjs-ext",
       "van-ui-extended",
-      "papaparse",
-      "xlsx",
     ],
   });
 
