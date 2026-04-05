@@ -1,0 +1,42 @@
+.jsf-hidden { display: none; }
+
+.jsf-dropzone {
+  border: 2px dashed #ccc;
+  border-radius: 8px;
+  padding: 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+.jsf-dropzone-active {
+  border-color: #4a90d9;
+  background: #f0f7ff;
+}
+.jsf-dropzone-text {
+  margin: 0;
+  color: #666;
+}
+.jsf-file-info {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.jsf-file-size {
+  color: #888;
+}
+.jsf-file-clear {
+  cursor: pointer;
+  background: none;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 0.85em;
+}
+.jsf-file-clear:hover {
+  background: #f0f0f0;
+}
+.jsf-file-reading {
+  margin-top: 8px;
+  color: #666;
+}
