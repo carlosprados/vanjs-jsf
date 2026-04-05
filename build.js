@@ -15,8 +15,6 @@ async function build() {
       "@remoteoss/json-schema-form",
       "vanjs-core",
       "vanjs-ext",
-      "papaparse",
-      "xlsx",
     ],
   });
 

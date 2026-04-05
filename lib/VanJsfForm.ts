@@ -79,9 +79,11 @@ class VanJsfForm {
 
   handleFieldChange(field: VanJsfField, value: MultiType) {
     this.formValues[field.name] = value;
-    // For file fields, also store the selected arrayPath key
+    // For file fields, also store file metadata
     if (field.inputType === "file") {
-      this.formValues[field.name + "__arrayPath"] = field.arrayPathValue;
+      this.formValues[field.name + "__fileName"] = field.fileNameValue;
+      this.formValues[field.name + "__fileSize"] = field.fileSizeValue;
+      this.formValues[field.name + "__fileType"] = field.fileTypeValue;
     }
     const { formErrors } = this.headlessForm.handleValidation(this.formValues);
     let extraError = false;
