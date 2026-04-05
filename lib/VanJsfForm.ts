@@ -8,9 +8,10 @@ import {
 } from "@remoteoss/json-schema-form";
 
 import { VanJsfField, MultiType } from "./VanJsfField";
-import { JsfTheme } from "./theme";
+import { JsfTheme, JsfLayout } from "./theme";
 
 const { form } = van.tags;
+
 
 class VanJsfForm {
   schema: JSONSchemaObjectType;
@@ -20,8 +21,9 @@ class VanJsfForm {
   formFields: VanJsfField[];
   formValues: Record<string, any>;
   theme: JsfTheme;
+  layout: JsfLayout;
 
-  constructor(jsonSchema: JSONSchemaObjectType, config: Record<string, any>, isValid?: State<boolean>, theme: JsfTheme = {}) {
+  constructor(jsonSchema: JSONSchemaObjectType, config: Record<string, any>, isValid?: State<boolean>, theme: JsfTheme = {}, layout: JsfLayout = {}) {
     // Bind methods to instance. Needed to pass functions as props to child components
     //this.handleSubmit = this.handleSubmit.bind(this);
     this.handleFieldChange = this.handleFieldChange.bind(this);
@@ -30,6 +32,7 @@ class VanJsfForm {
     this.config = config;
     this.isValid = isValid || undefined;
     this.theme = theme;
+    this.layout = layout;
     // Working with parameters
     const initialValues = { ...config?.initialValues };
     this.headlessForm = createHeadlessForm(jsonSchema, config);
@@ -123,7 +126,8 @@ class VanJsfForm {
       }
 
       // Create and return a new VanJsfField instance for this field
-      return new VanJsfField(field, initVal, this.handleFieldChange, this.theme);
+      const fieldLayout = this.layout[fieldPath] || this.layout[field.name] || "";
+      return new VanJsfField(field, initVal, this.handleFieldChange, this.theme, fieldLayout);
     });
   }
 }
@@ -139,7 +143,8 @@ export function jsform(
   if (!config.formValues) config.formValues = {};
   const isValid = attributes.isValid;
   const theme: JsfTheme = attributes.theme ?? {};
-  const vanJsfForm: VanJsfForm = new VanJsfForm(attributes.schema, config, isValid, theme);
+  const layout: JsfLayout = attributes.layout ?? {};
+  const vanJsfForm: VanJsfForm = new VanJsfForm(attributes.schema, config, isValid, theme, layout);
   const fields: Element[] = vanJsfForm.formFields.map((field: VanJsfField) =>
     field.render()
   );

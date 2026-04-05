@@ -53,6 +53,7 @@ export class VanJsfField extends VanJSComponent {
   isVisibleState: State<boolean>;
   errorState: State<string>;
   theme: JsfTheme;
+  layoutClass: string;
   /** Used by file fields to pass file metadata to formValues */
   fileNameValue: string = "";
   fileSizeValue: string = "";
@@ -62,6 +63,7 @@ export class VanJsfField extends VanJSComponent {
     initVal: MultiType,
     handleChange: (field: VanJsfField, value: MultiType) => void,
     theme: JsfTheme = {},
+    layoutClass: string = "",
   ) {
     super();
     this.field = field;
@@ -69,6 +71,7 @@ export class VanJsfField extends VanJSComponent {
     this.iniVal = initVal;
     this.handleChange = handleChange;
     this.theme = theme;
+    this.layoutClass = layoutClass;
     this.isVisibleState = van.state(this.field.isVisible as boolean);
     this.errorState = van.state("");
   }
@@ -183,9 +186,10 @@ export class VanJsfField extends VanJSComponent {
   render(): Element {
     let el: Element;
     const baseContainer = resolve(this.containerClass, this.theme.container);
+    const containerCls = this.layoutClass ? `${baseContainer} ${this.layoutClass}` : baseContainer;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const props: Record<string, any> = {
-      class: () => this.isVisible ? baseContainer : `${baseContainer} jsf-hidden`.trim(),
+      class: () => this.isVisible ? containerCls : `${containerCls} jsf-hidden`.trim(),
     };
     switch (this.inputType) {
       case FieldType.text:

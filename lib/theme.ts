@@ -34,6 +34,9 @@ export interface JsfTheme {
   requiredIndicator?: string;
 }
 
+/** Maps field names to extra CSS classes for their container div */
+export type JsfLayout = Record<string, string>;
+
 /** Resolve a class: field class > theme class > empty string */
 export const resolve = (fieldClass: string | undefined, themeClass: string | undefined): string =>
   fieldClass || themeClass || "";
