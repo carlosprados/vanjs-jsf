@@ -12,6 +12,7 @@ const { div, p, input, label, textarea, legend, link, fieldset, span, select, op
 
 enum FieldType {
   text = "text",
+  password = "password",
   code = "code",
   number = "number",
   textarea = "textarea",
@@ -200,6 +201,28 @@ export class VanJsfField extends VanJSComponent {
           input({
             id: this.name,
             type: "text",
+            class: resolve(this.class, this.theme.input),
+            value: this.iniVal,
+            oninput: (e: Event) => this.handleChange(this, (e.target as HTMLInputElement).value),
+          }),
+          this.renderError(),
+        );
+        break;
+
+      case FieldType.password:
+        // Password is rendered with type="password" so the user agent
+        // masks the value as it is typed. Otherwise behaves identically
+        // to a text input — same theme.input class, same oninput
+        // wiring. autocomplete="new-password" hints to browsers that
+        // this is a credential entry form, not a "remember me" field.
+        el = div(
+          props,
+          this.renderLabel(),
+          this.renderDescription(),
+          input({
+            id: this.name,
+            type: "password",
+            autocomplete: "new-password",
             class: resolve(this.class, this.theme.input),
             value: this.iniVal,
             oninput: (e: Event) => this.handleChange(this, (e.target as HTMLInputElement).value),
