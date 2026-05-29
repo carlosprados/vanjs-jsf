@@ -1,13 +1,10 @@
 import van, { State } from "vanjs-core";
 import { VanJSComponent } from "./VanJSComponent";
 import { JsfTheme, resolve } from "./theme";
-import pikaday from "pikaday";
-import { basicSetup, EditorView } from "codemirror"
-import { javascript, esLint } from "@codemirror/lang-javascript";
-import { json, jsonParseLinter } from "@codemirror/lang-json";
-import { lintGutter, linter, forEachDiagnostic } from "@codemirror/lint";
-import * as eslint from "eslint-linter-browserify";
-import globals from "globals";
+// Heavy, field-type-specific dependencies (CodeMirror + ESLint for the `code`
+// field, Pikaday for the `date` field) are loaded lazily via dynamic import inside
+// the relevant renderers. This keeps them out of the main bundle so a form that
+// only uses text/number/select/etc. never pays for them.
 const { div, p, input, label, textarea, legend, link, fieldset, span, select, option, button, strong, small } = van.tags;
 
 enum FieldType {
@@ -22,21 +19,6 @@ enum FieldType {
   fieldset = "fieldset",
   file = "file"
 }
-const eslintConfig = {
-  // eslint configuration
-  languageOptions: {
-    globals: {
-      ...globals.node,
-    },
-    parserOptions: {
-      ecmaVersion: 2022,
-      sourceType: "module",
-    },
-  },
-  rules: {
-    semi: ["error", "never"],
-  },
-};
 export interface Option {
   label: string;
   value: string;
@@ -92,42 +74,6 @@ export class VanJsfField extends VanJSComponent {
   get isRequired(): boolean {
     return this.field.required as boolean ?? false;
   }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  get codemirrorExtension(): Array<any> {
-    const cmTheme = EditorView.theme({
-      '.cm-content, .cm-gutter': {
-        "min-height": "150px",
-      },
-      '.cm-content': {
-        "min-height": "150px",
-      },
-      '.cm-gutters': {
-        margin: '1px',
-      },
-      '.cm-scroller': {
-        overflow: 'auto',
-      },
-      '.cm-wrap': {
-        border: '1px solid silver',
-      },
-    });
-    const extensions = [cmTheme, EditorView.updateListener.of((e) => {
-      this.field.error = null
-      forEachDiagnostic(e.state, (diag) => {
-        if (diag.severity === "error") {
-          this.field.error = diag.message
-        }
-      })
-      this.handleChange(this, e.state.doc.toString())
-    }), basicSetup, lintGutter()]
-    switch (this.field.codemirrorType) {
-      case "json": extensions.push(json(), linter(jsonParseLinter())); break;
-      case "javascript": extensions.push(javascript(), linter(esLint(new eslint.Linter(), eslintConfig))); break;
-      case "typescript": extensions.push(javascript({ typescript: true }), linter(esLint(new eslint.Linter(), eslintConfig))); break;
-      default: extensions.push(javascript(), linter(esLint(new eslint.Linter(), eslintConfig))); break;
-    }
-    return extensions
-  }
   get containerClass(): string {
     return this.field.containerClass as string;
   }
@@ -182,6 +128,87 @@ export class VanJsfField extends VanJSComponent {
 
   private renderError(): Element {
     return p({ class: resolve(this.errorClass, this.theme.error) }, () => this.error);
+  }
+
+  /**
+   * Lazily loads CodeMirror + ESLint and mounts a code editor into `parent`.
+   * These are the heaviest dependencies in the library; importing them only here
+   * keeps them out of the main bundle for forms that don't use a `code` field.
+   */
+  private async mountCodeEditor(parent: HTMLElement): Promise<void> {
+    const [
+      { basicSetup, EditorView },
+      { javascript, esLint },
+      { json, jsonParseLinter },
+      { lintGutter, linter, forEachDiagnostic },
+      eslint,
+      globalsModule,
+    ] = await Promise.all([
+      import("codemirror"),
+      import("@codemirror/lang-javascript"),
+      import("@codemirror/lang-json"),
+      import("@codemirror/lint"),
+      import("eslint-linter-browserify"),
+      import("globals"),
+    ]);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const globals: any = (globalsModule as any).default ?? globalsModule;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const eslintConfig: any = {
+      languageOptions: {
+        globals: { ...globals.node },
+        parserOptions: { ecmaVersion: 2022, sourceType: "module" },
+      },
+      rules: { semi: ["error", "never"] },
+    };
+    const cmTheme = EditorView.theme({
+      '.cm-content, .cm-gutter': { "min-height": "150px" },
+      '.cm-content': { "min-height": "150px" },
+      '.cm-gutters': { margin: '1px' },
+      '.cm-scroller': { overflow: 'auto' },
+      '.cm-wrap': { border: '1px solid silver' },
+    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const extensions: any[] = [cmTheme, EditorView.updateListener.of((e) => {
+      this.field.error = null;
+      forEachDiagnostic(e.state, (diag) => {
+        if (diag.severity === "error") {
+          this.field.error = diag.message;
+        }
+      });
+      this.handleChange(this, e.state.doc.toString());
+    }), basicSetup, lintGutter()];
+    switch (this.field.codemirrorType) {
+      case "json": extensions.push(json(), linter(jsonParseLinter())); break;
+      case "javascript": extensions.push(javascript(), linter(esLint(new eslint.Linter(), eslintConfig))); break;
+      case "typescript": extensions.push(javascript({ typescript: true }), linter(esLint(new eslint.Linter(), eslintConfig))); break;
+      default: extensions.push(javascript(), linter(esLint(new eslint.Linter(), eslintConfig))); break;
+    }
+    new EditorView({ doc: String(this.iniVal), parent, extensions });
+  }
+
+  /** Lazily loads Pikaday and attaches a date picker to `calendarInput`. */
+  private async mountDatePicker(parent: HTMLElement, calendarInput: HTMLInputElement): Promise<void> {
+    const Pikaday = (await import("pikaday")).default;
+    new Pikaday({
+      field: calendarInput,
+      format: 'YYYY-MM-DD',
+      container: parent,
+      firstDay: 1,
+      toString(date: Date) {
+        const day = date.getDate();
+        const month = date.getMonth() + 1;
+        const year = date.getFullYear();
+        return `${year}-${("0" + month).slice(-2)}-${("0" + day).slice(-2)}`;
+      },
+      parse(dateString: string) {
+        const parts = dateString.split('-');
+        const year = parseInt(parts[0], 10);
+        const month = parseInt(parts[1], 10) - 1;
+        const day = parseInt(parts[2], 10);
+        return new Date(year, month, day);
+      }
+    });
   }
 
   render(): Element {
@@ -253,11 +280,9 @@ export class VanJsfField extends VanJSComponent {
           this.renderLabel(),
           this.renderDescription(),
         );
-        new EditorView({
-          doc: String(this.iniVal),
-          parent: el,
-          extensions: this.codemirrorExtension
-        });
+        // CodeMirror + ESLint are loaded on demand; the editor mounts into `el`
+        // once the chunk resolves.
+        void this.mountCodeEditor(el as HTMLElement);
         break;
       case FieldType.select:
         el = div(
@@ -299,25 +324,8 @@ export class VanJsfField extends VanJSComponent {
             // External CDN dependency for Pikaday CSS — consider bundling for production
             link({ rel: "stylesheet", type: "text/css", href: "https://cdn.jsdelivr.net/npm/pikaday/css/pikaday.css" })
           );
-        new pikaday({
-          field: calendarInput,
-          format: 'YYYY-MM-DD',
-          container: el as HTMLElement,
-          firstDay: 1,
-          toString(date: Date) {
-            const day = date.getDate();
-            const month = date.getMonth() + 1;
-            const year = date.getFullYear();
-            return `${year}-${("0" + month).slice(-2)}-${("0" + day).slice(-2)}`;
-          },
-          parse(dateString: string) {
-            const parts = dateString.split('-');
-            const year = parseInt(parts[0], 10);
-            const month = parseInt(parts[1], 10) - 1;
-            const day = parseInt(parts[2], 10);
-            return new Date(year, month, day);
-          }
-        });
+        // Pikaday is loaded on demand and attached to the input once available.
+        void this.mountDatePicker(el as HTMLElement, calendarInput as HTMLInputElement);
         break;
       }
       case FieldType.number:
