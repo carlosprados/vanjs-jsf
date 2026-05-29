@@ -211,6 +211,86 @@ export class VanJsfField extends VanJSComponent {
     });
   }
 
+  /**
+   * Renders an editable list for an array property. json-schema-form reports
+   * arrays as an unusable "select", so we read the item schema from the field's
+   * scopedJsonSchema and render one input per element with add/remove controls.
+   * Supports scalar item types (number/integer/string/boolean). The value is kept
+   * in formValues as a real JS array.
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private renderArray(props: Record<string, any>): Element {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const scoped = this.field.scopedJsonSchema as any;
+    const arraySchema = scoped?.properties?.[this.name] ?? {};
+    const itemSchema = arraySchema.items ?? { type: "string" };
+    const itemType: string = itemSchema.type ?? "string";
+    const isNumeric = itemType === "number" || itemType === "integer";
+    const isBoolean = itemType === "boolean";
+    const minItems: number = arraySchema.minItems ?? 0;
+    const maxItems: number = arraySchema.maxItems ?? Infinity;
+
+    const blank = (): MultiType => (isNumeric ? 0 : isBoolean ? false : "");
+    const coerce = (raw: string): MultiType => (isNumeric ? (raw === "" ? "" : Number(raw)) : raw);
+
+    const values: MultiType[] = Array.isArray(this.iniVal) ? [...(this.iniVal as MultiType[])] : [];
+    while (values.length < minItems) values.push(blank());
+
+    // Bumped only on add/remove so typing into a row never re-renders it (avoids
+    // losing input focus on every keystroke).
+    const version = van.state(0);
+    const emit = () => this.handleChange(this, values.slice() as unknown as MultiType);
+    emit();
+
+    const itemClass = resolve(this.class, this.theme.input);
+
+    const rowInput = (i: number): Element => {
+      if (isBoolean) {
+        return input({
+          type: "checkbox",
+          class: itemClass,
+          checked: Boolean(values[i]),
+          onchange: (e: Event) => { values[i] = (e.target as HTMLInputElement).checked; emit(); },
+        });
+      }
+      return input({
+        type: isNumeric ? "number" : "text",
+        class: itemClass,
+        value: String(values[i] ?? ""),
+        oninput: (e: Event) => { values[i] = coerce((e.target as HTMLInputElement).value); emit(); },
+      });
+    };
+
+    const rows = (): Element => div(
+      { class: this.theme.arrayItems || "jsf-array-items" },
+      values.map((_, i) =>
+        div({ class: this.theme.arrayRow || "jsf-array-row" },
+          rowInput(i),
+          button({
+            type: "button",
+            class: this.theme.arrayRemoveButton || "jsf-array-remove",
+            disabled: values.length <= minItems,
+            onclick: () => { values.splice(i, 1); version.val++; emit(); },
+          }, "✕"),
+        )
+      ),
+    );
+
+    return div(
+      props,
+      this.renderLabel(),
+      this.renderDescription(),
+      // Re-render the row list whenever an item is added or removed.
+      () => { void version.val; return rows(); },
+      button({
+        type: "button",
+        class: this.theme.arrayAddButton || "jsf-array-add",
+        onclick: () => { if (values.length < maxItems) { values.push(blank()); version.val++; emit(); } },
+      }, "+ Add"),
+      this.renderError(),
+    );
+  }
+
   render(): Element {
     let el: Element;
     const baseContainer = resolve(this.containerClass, this.theme.container);
@@ -219,6 +299,13 @@ export class VanJsfField extends VanJSComponent {
     const props: Record<string, any> = {
       class: () => this.isVisible ? containerCls : `${containerCls} jsf-hidden`.trim(),
     };
+    // json-schema-form reports arrays as inputType "select" with no options, which
+    // is not usable. Detect the array jsonType and render an editable repeatable
+    // list of scalar items instead.
+    if (this.field.jsonType === "array") {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return this.renderArray(props);
+    }
     switch (this.inputType) {
       case FieldType.text:
         el = div(
