@@ -1,0 +1,14 @@
+{
+  // Build-only config: same options as tsconfig.json but excludes the demo
+  // (lib/main.ts) so it isn't emitted into the published package. The base
+  // tsconfig.json still includes main.ts so editors and ESLint type-check it.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    // Self-contained source maps: the original .ts is embedded in each
+    // .js.map (inlineSources), so consumers can debug against the source
+    // without us shipping the .ts files separately.
+    "sourceMap": true,
+    "inlineSources": true
+  },
+  "exclude": ["node_modules", "dist", "lib/main.ts"]
+}
