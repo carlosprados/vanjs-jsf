@@ -19,17 +19,16 @@ vanjs-jsf is a TypeScript library that generates dynamic UI forms from JSON Sche
 
 ```bash
 npm run dev      # Start Vite dev server (port 3030, auto-opens browser)
-npm run build    # Bundle with esbuild → dist/index.js (ESM)
-npm run types    # Generate type declarations → dist/*.d.ts
+npm run build    # Compile lib/ → dist/ (tsc, ESM + .d.ts) and copy jsf-defaults.css
 npm run lint     # Run ESLint on lib/
 npm run lint:fix # Run ESLint with auto-fix
 ```
 
 ## Build Details
 
-- **esbuild** (build.js): bundles `lib/index.ts` → `dist/index.js`. Externalizes `@remoteoss/json-schema-form`, `vanjs-core`, `vanjs-ext`.
-- **TypeScript**: strict mode, ESNext target/module, declarations emitted to `dist/`.
-- **publish.sh**: removes dist/, runs build + types, then `npm publish --access public`.
+- **TypeScript** (build): `tsc` compiles `lib/` → `dist/` as per-module ESM with `.d.ts`. This *is* the published runtime. `dist/index.js` re-exports `jsform` from `./VanJsfForm`; heavy field deps (CodeMirror/ESLint/Pikaday) stay behind dynamic `import()` so the consumer's bundler code-splits them. Strict mode, ESNext target/module.
+- **No bundler**: the package ships unbundled per-module ESM — consumers bundle it themselves. `lib/main.ts` is the demo (served by vite in dev) and is excluded from the package via tsconfig.
+- **publish.sh**: removes dist/, runs `npm run build`, then `npm publish --access public`.
 - **npm package**: https://www.npmjs.com/package/vanjs-jsf
 
 ## Architecture

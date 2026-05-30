@@ -322,8 +322,7 @@ This is included in `jsf-defaults.css`.
 ```bash
 npm install          # Install dependencies
 npm run dev          # Start Vite dev server (port 3030)
-npm run build        # Bundle with esbuild → dist/index.js
-npm run types        # Generate type declarations → dist/*.d.ts
+npm run build        # Compile lib/ → dist/ (tsc, ESM + .d.ts) + copy CSS
 npm run lint         # Run ESLint
 npm run lint:fix     # Run ESLint with auto-fix
 ```
@@ -337,7 +336,7 @@ npm run lint:fix     # Run ESLint with auto-fix
 ./publish.sh <otp>
 ```
 
-This cleans `dist/`, rebuilds the bundle and type declarations, copies `jsf-defaults.css` to `dist/`, and publishes to npm.
+This cleans `dist/`, compiles `lib/` to ESM + type declarations (and copies `jsf-defaults.css`) via `npm run build`, then publishes to npm.
 
 The package is available at: https://www.npmjs.com/package/vanjs-jsf
 
