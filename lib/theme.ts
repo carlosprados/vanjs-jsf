@@ -20,6 +20,12 @@ export interface JsfTheme {
   fieldset?: string;
   legend?: string;
 
+  // Array (repeatable list of scalar items)
+  arrayItems?: string;
+  arrayRow?: string;
+  arrayAddButton?: string;
+  arrayRemoveButton?: string;
+
   // File upload
   dropZone?: string;
   dropZoneActive?: string;

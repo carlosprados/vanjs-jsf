@@ -24,12 +24,14 @@ The currently supported form element types are:
 - text = "text"
 - number = "number"
 - textarea = "textarea"
+- password = "password"
 - select = "select"
 - radio = "radio"
 - date = "date" (Pikaday)
 - code = "code" (CodeMirror with JSON, JavaScript, TypeScript support)
 - fieldset = "fieldset"
 - file = "file" (drag & drop, with configurable `readAs` mode and size validation)
+- array (repeatable list of scalar items: number/integer/string/boolean, with add/remove controls)
 
 ## Getting Started
 
@@ -211,6 +213,10 @@ const formEl = jsform({
 | `radioInput`        | `<input type="radio">` elements                        |
 | `fieldset`          | `<fieldset>` elements                                  |
 | `legend`            | `<legend>` elements (falls back to `label` if not set) |
+| `arrayItems`        | Container `<div>` wrapping the list of array items     |
+| `arrayRow`          | `<div>` wrapping each array item (input + remove)      |
+| `arrayAddButton`    | "Add" button to append a new array item                |
+| `arrayRemoveButton` | "Remove" button next to each array item                |
 | `dropZone`          | File drop zone container (normal state)                |
 | `dropZoneActive`    | File drop zone during dragover                         |
 | `dropZoneText`      | Text inside the drop zone                              |

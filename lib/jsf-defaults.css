@@ -40,3 +40,40 @@
   margin-top: 8px;
   color: #666;
 }
+
+/* Array field (repeatable list of scalar items) */
+.jsf-array-items {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.jsf-array-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.jsf-array-remove {
+  cursor: pointer;
+  background: none;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 2px 8px;
+}
+.jsf-array-remove:hover:not(:disabled) {
+  background: #f0f0f0;
+}
+.jsf-array-remove:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.jsf-array-add {
+  margin-top: 6px;
+  cursor: pointer;
+  background: none;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 4px 10px;
+}
+.jsf-array-add:hover {
+  background: #f0f0f0;
+}

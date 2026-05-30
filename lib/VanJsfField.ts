@@ -1,13 +1,10 @@
 import van, { State } from "vanjs-core";
 import { VanJSComponent } from "./VanJSComponent";
 import { JsfTheme, resolve } from "./theme";
-import pikaday from "pikaday";
-import { basicSetup, EditorView } from "codemirror"
-import { javascript, esLint } from "@codemirror/lang-javascript";
-import { json, jsonParseLinter } from "@codemirror/lang-json";
-import { lintGutter, linter, forEachDiagnostic } from "@codemirror/lint";
-import * as eslint from "eslint-linter-browserify";
-import globals from "globals";
+// Heavy, field-type-specific dependencies (CodeMirror + ESLint for the `code`
+// field, Pikaday for the `date` field) are loaded lazily via dynamic import inside
+// the relevant renderers. This keeps them out of the main bundle so a form that
+// only uses text/number/select/etc. never pays for them.
 const { div, p, input, label, textarea, legend, link, fieldset, span, select, option, button, strong, small } = van.tags;
 
 enum FieldType {
@@ -22,21 +19,6 @@ enum FieldType {
   fieldset = "fieldset",
   file = "file"
 }
-const eslintConfig = {
-  // eslint configuration
-  languageOptions: {
-    globals: {
-      ...globals.node,
-    },
-    parserOptions: {
-      ecmaVersion: 2022,
-      sourceType: "module",
-    },
-  },
-  rules: {
-    semi: ["error", "never"],
-  },
-};
 export interface Option {
   label: string;
   value: string;
@@ -91,42 +73,6 @@ export class VanJsfField extends VanJSComponent {
   }
   get isRequired(): boolean {
     return this.field.required as boolean ?? false;
-  }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  get codemirrorExtension(): Array<any> {
-    const cmTheme = EditorView.theme({
-      '.cm-content, .cm-gutter': {
-        "min-height": "150px",
-      },
-      '.cm-content': {
-        "min-height": "150px",
-      },
-      '.cm-gutters': {
-        margin: '1px',
-      },
-      '.cm-scroller': {
-        overflow: 'auto',
-      },
-      '.cm-wrap': {
-        border: '1px solid silver',
-      },
-    });
-    const extensions = [cmTheme, EditorView.updateListener.of((e) => {
-      this.field.error = null
-      forEachDiagnostic(e.state, (diag) => {
-        if (diag.severity === "error") {
-          this.field.error = diag.message
-        }
-      })
-      this.handleChange(this, e.state.doc.toString())
-    }), basicSetup, lintGutter()]
-    switch (this.field.codemirrorType) {
-      case "json": extensions.push(json(), linter(jsonParseLinter())); break;
-      case "javascript": extensions.push(javascript(), linter(esLint(new eslint.Linter(), eslintConfig))); break;
-      case "typescript": extensions.push(javascript({ typescript: true }), linter(esLint(new eslint.Linter(), eslintConfig))); break;
-      default: extensions.push(javascript(), linter(esLint(new eslint.Linter(), eslintConfig))); break;
-    }
-    return extensions
   }
   get containerClass(): string {
     return this.field.containerClass as string;
@@ -184,6 +130,167 @@ export class VanJsfField extends VanJSComponent {
     return p({ class: resolve(this.errorClass, this.theme.error) }, () => this.error);
   }
 
+  /**
+   * Lazily loads CodeMirror + ESLint and mounts a code editor into `parent`.
+   * These are the heaviest dependencies in the library; importing them only here
+   * keeps them out of the main bundle for forms that don't use a `code` field.
+   */
+  private async mountCodeEditor(parent: HTMLElement): Promise<void> {
+    const [
+      { basicSetup, EditorView },
+      { javascript, esLint },
+      { json, jsonParseLinter },
+      { lintGutter, linter, forEachDiagnostic },
+      eslint,
+      globalsModule,
+    ] = await Promise.all([
+      import("codemirror"),
+      import("@codemirror/lang-javascript"),
+      import("@codemirror/lang-json"),
+      import("@codemirror/lint"),
+      import("eslint-linter-browserify"),
+      import("globals"),
+    ]);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const globals: any = (globalsModule as any).default ?? globalsModule;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const eslintConfig: any = {
+      languageOptions: {
+        globals: { ...globals.node },
+        parserOptions: { ecmaVersion: 2022, sourceType: "module" },
+      },
+      rules: { semi: ["error", "never"] },
+    };
+    const cmTheme = EditorView.theme({
+      '.cm-content, .cm-gutter': { "min-height": "150px" },
+      '.cm-content': { "min-height": "150px" },
+      '.cm-gutters': { margin: '1px' },
+      '.cm-scroller': { overflow: 'auto' },
+      '.cm-wrap': { border: '1px solid silver' },
+    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const extensions: any[] = [cmTheme, EditorView.updateListener.of((e) => {
+      this.field.error = null;
+      forEachDiagnostic(e.state, (diag) => {
+        if (diag.severity === "error") {
+          this.field.error = diag.message;
+        }
+      });
+      this.handleChange(this, e.state.doc.toString());
+    }), basicSetup, lintGutter()];
+    switch (this.field.codemirrorType) {
+      case "json": extensions.push(json(), linter(jsonParseLinter())); break;
+      case "javascript": extensions.push(javascript(), linter(esLint(new eslint.Linter(), eslintConfig))); break;
+      case "typescript": extensions.push(javascript({ typescript: true }), linter(esLint(new eslint.Linter(), eslintConfig))); break;
+      default: extensions.push(javascript(), linter(esLint(new eslint.Linter(), eslintConfig))); break;
+    }
+    new EditorView({ doc: String(this.iniVal), parent, extensions });
+  }
+
+  /** Lazily loads Pikaday and attaches a date picker to `calendarInput`. */
+  private async mountDatePicker(parent: HTMLElement, calendarInput: HTMLInputElement): Promise<void> {
+    const Pikaday = (await import("pikaday")).default;
+    new Pikaday({
+      field: calendarInput,
+      format: 'YYYY-MM-DD',
+      container: parent,
+      firstDay: 1,
+      toString(date: Date) {
+        const day = date.getDate();
+        const month = date.getMonth() + 1;
+        const year = date.getFullYear();
+        return `${year}-${("0" + month).slice(-2)}-${("0" + day).slice(-2)}`;
+      },
+      parse(dateString: string) {
+        const parts = dateString.split('-');
+        const year = parseInt(parts[0], 10);
+        const month = parseInt(parts[1], 10) - 1;
+        const day = parseInt(parts[2], 10);
+        return new Date(year, month, day);
+      }
+    });
+  }
+
+  /**
+   * Renders an editable list for an array property. json-schema-form reports
+   * arrays as an unusable "select", so we read the item schema from the field's
+   * scopedJsonSchema and render one input per element with add/remove controls.
+   * Supports scalar item types (number/integer/string/boolean). The value is kept
+   * in formValues as a real JS array.
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private renderArray(props: Record<string, any>): Element {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const scoped = this.field.scopedJsonSchema as any;
+    const arraySchema = scoped?.properties?.[this.name] ?? {};
+    const itemSchema = arraySchema.items ?? { type: "string" };
+    const itemType: string = itemSchema.type ?? "string";
+    const isNumeric = itemType === "number" || itemType === "integer";
+    const isBoolean = itemType === "boolean";
+    const minItems: number = arraySchema.minItems ?? 0;
+    const maxItems: number = arraySchema.maxItems ?? Infinity;
+
+    const blank = (): MultiType => (isNumeric ? 0 : isBoolean ? false : "");
+    const coerce = (raw: string): MultiType => (isNumeric ? (raw === "" ? "" : Number(raw)) : raw);
+
+    const values: MultiType[] = Array.isArray(this.iniVal) ? [...(this.iniVal as MultiType[])] : [];
+    while (values.length < minItems) values.push(blank());
+
+    // Bumped only on add/remove so typing into a row never re-renders it (avoids
+    // losing input focus on every keystroke).
+    const version = van.state(0);
+    const emit = () => this.handleChange(this, values.slice() as unknown as MultiType);
+    emit();
+
+    const itemClass = resolve(this.class, this.theme.input);
+
+    const rowInput = (i: number): Element => {
+      if (isBoolean) {
+        return input({
+          type: "checkbox",
+          class: itemClass,
+          checked: Boolean(values[i]),
+          onchange: (e: Event) => { values[i] = (e.target as HTMLInputElement).checked; emit(); },
+        });
+      }
+      return input({
+        type: isNumeric ? "number" : "text",
+        class: itemClass,
+        value: String(values[i] ?? ""),
+        oninput: (e: Event) => { values[i] = coerce((e.target as HTMLInputElement).value); emit(); },
+      });
+    };
+
+    const rows = (): Element => div(
+      { class: this.theme.arrayItems || "jsf-array-items" },
+      values.map((_, i) =>
+        div({ class: this.theme.arrayRow || "jsf-array-row" },
+          rowInput(i),
+          button({
+            type: "button",
+            class: this.theme.arrayRemoveButton || "jsf-array-remove",
+            disabled: values.length <= minItems,
+            onclick: () => { values.splice(i, 1); version.val++; emit(); },
+          }, "✕"),
+        )
+      ),
+    );
+
+    return div(
+      props,
+      this.renderLabel(),
+      this.renderDescription(),
+      // Re-render the row list whenever an item is added or removed.
+      () => { void version.val; return rows(); },
+      button({
+        type: "button",
+        class: this.theme.arrayAddButton || "jsf-array-add",
+        onclick: () => { if (values.length < maxItems) { values.push(blank()); version.val++; emit(); } },
+      }, "+ Add"),
+      this.renderError(),
+    );
+  }
+
   render(): Element {
     let el: Element;
     const baseContainer = resolve(this.containerClass, this.theme.container);
@@ -192,6 +299,13 @@ export class VanJsfField extends VanJSComponent {
     const props: Record<string, any> = {
       class: () => this.isVisible ? containerCls : `${containerCls} jsf-hidden`.trim(),
     };
+    // json-schema-form reports arrays as inputType "select" with no options, which
+    // is not usable. Detect the array jsonType and render an editable repeatable
+    // list of scalar items instead.
+    if (this.field.jsonType === "array") {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return this.renderArray(props);
+    }
     switch (this.inputType) {
       case FieldType.text:
         el = div(
@@ -253,11 +367,9 @@ export class VanJsfField extends VanJSComponent {
           this.renderLabel(),
           this.renderDescription(),
         );
-        new EditorView({
-          doc: String(this.iniVal),
-          parent: el,
-          extensions: this.codemirrorExtension
-        });
+        // CodeMirror + ESLint are loaded on demand; the editor mounts into `el`
+        // once the chunk resolves.
+        void this.mountCodeEditor(el as HTMLElement);
         break;
       case FieldType.select:
         el = div(
@@ -299,25 +411,8 @@ export class VanJsfField extends VanJSComponent {
             // External CDN dependency for Pikaday CSS — consider bundling for production
             link({ rel: "stylesheet", type: "text/css", href: "https://cdn.jsdelivr.net/npm/pikaday/css/pikaday.css" })
           );
-        new pikaday({
-          field: calendarInput,
-          format: 'YYYY-MM-DD',
-          container: el as HTMLElement,
-          firstDay: 1,
-          toString(date: Date) {
-            const day = date.getDate();
-            const month = date.getMonth() + 1;
-            const year = date.getFullYear();
-            return `${year}-${("0" + month).slice(-2)}-${("0" + day).slice(-2)}`;
-          },
-          parse(dateString: string) {
-            const parts = dateString.split('-');
-            const year = parseInt(parts[0], 10);
-            const month = parseInt(parts[1], 10) - 1;
-            const day = parseInt(parts[2], 10);
-            return new Date(year, month, day);
-          }
-        });
+        // Pikaday is loaded on demand and attached to the input once available.
+        void this.mountDatePicker(el as HTMLElement, calendarInput as HTMLInputElement);
         break;
       }
       case FieldType.number:

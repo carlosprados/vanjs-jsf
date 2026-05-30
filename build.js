@@ -5,12 +5,16 @@ import { copyFileSync, mkdirSync } from "fs";
 async function build() {
   const ctx = await esbuild.context({
     entryPoints: ["lib/index.ts"], // Punto de entrada principal
-    outfile: "dist/index.js", // Archivo de salida
-    bundle: true, // Empaqueta todos los archivos en uno
-    format: "esm", // Usa el formato de módulos ES
+    outdir: "dist", // Directorio de salida (entry -> dist/index.js)
+    bundle: true, // Empaqueta todos los archivos
+    splitting: true, // Genera chunks separados para los import() dinámicos
+    format: "esm", // Usa el formato de módulos ES (requerido por splitting)
     platform: "browser", // Plataforma objetivo: navegadores
     sourcemap: true, // Genera mapas de fuente
     target: "esnext", // Soporte para navegadores modernos
+    // Chunks de dependencias pesadas (CodeMirror, ESLint, Pikaday) cargadas con
+    // import() dinámico; los nombres incluyen hash para cacheado.
+    chunkNames: "chunks/[name]-[hash]",
     external: [
       // Excluye las dependencias externas
       "@remoteoss/json-schema-form",
