@@ -19,7 +19,10 @@
   "types": "./dist/index.d.ts",
   "type": "module",
   "files": [
-    "dist",
+    "dist/*.js",
+    "dist/*.js.map",
+    "dist/*.d.ts",
+    "dist/jsf-defaults.css",
     "README.md"
   ],
   "scripts": {
