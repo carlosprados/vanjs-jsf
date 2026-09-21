@@ -28,6 +28,80 @@ export interface Option {
 
 export type MultiType = string | number | boolean;
 
+/**
+ * Rules the `code` field lints with. These are ESLint's own `eslint:recommended` set, spelled
+ * out because `eslint-linter-browserify` ships no config resolver — a bare `Linter` with no
+ * `rules` reports parse errors and nothing else, which looks like a working editor while
+ * catching none of the mistakes people actually make.
+ *
+ * Stylistic rules are deliberately absent. A host embedding this editor has no say in the
+ * code style of whoever types into it, and flagging every semicolon as an error is worse than
+ * flagging nothing: the real diagnostics drown.
+ */
+const ESLINT_RULES: Record<string, "error"> = {
+  "constructor-super": "error",
+  "for-direction": "error",
+  "getter-return": "error",
+  "no-async-promise-executor": "error",
+  "no-case-declarations": "error",
+  "no-class-assign": "error",
+  "no-compare-neg-zero": "error",
+  "no-cond-assign": "error",
+  "no-const-assign": "error",
+  "no-constant-binary-expression": "error",
+  "no-constant-condition": "error",
+  "no-control-regex": "error",
+  "no-debugger": "error",
+  "no-delete-var": "error",
+  "no-dupe-args": "error",
+  "no-dupe-class-members": "error",
+  "no-dupe-else-if": "error",
+  "no-dupe-keys": "error",
+  "no-duplicate-case": "error",
+  "no-empty": "error",
+  "no-empty-character-class": "error",
+  "no-empty-pattern": "error",
+  "no-empty-static-block": "error",
+  "no-ex-assign": "error",
+  "no-extra-boolean-cast": "error",
+  "no-fallthrough": "error",
+  "no-func-assign": "error",
+  "no-global-assign": "error",
+  "no-import-assign": "error",
+  "no-invalid-regexp": "error",
+  "no-irregular-whitespace": "error",
+  "no-loss-of-precision": "error",
+  "no-misleading-character-class": "error",
+  "no-new-native-nonconstructor": "error",
+  "no-nonoctal-decimal-escape": "error",
+  "no-obj-calls": "error",
+  "no-octal": "error",
+  "no-prototype-builtins": "error",
+  "no-redeclare": "error",
+  "no-regex-spaces": "error",
+  "no-self-assign": "error",
+  "no-setter-return": "error",
+  "no-shadow-restricted-names": "error",
+  "no-sparse-arrays": "error",
+  "no-this-before-super": "error",
+  "no-undef": "error",
+  "no-unexpected-multiline": "error",
+  "no-unreachable": "error",
+  "no-unsafe-finally": "error",
+  "no-unsafe-negation": "error",
+  "no-unsafe-optional-chaining": "error",
+  "no-unused-labels": "error",
+  "no-unused-private-class-members": "error",
+  "no-unused-vars": "error",
+  "no-useless-backreference": "error",
+  "no-useless-catch": "error",
+  "no-useless-escape": "error",
+  "no-with": "error",
+  "require-yield": "error",
+  "use-isnan": "error",
+  "valid-typeof": "error",
+};
+
 export class VanJsfField extends VanJSComponent {
   name: string;
   field: Record<string, unknown>;
@@ -143,6 +217,7 @@ export class VanJsfField extends VanJSComponent {
       { lintGutter, linter, forEachDiagnostic },
       eslint,
       globalsModule,
+      { dracula },
     ] = await Promise.all([
       import("codemirror"),
       import("@codemirror/lang-javascript"),
@@ -150,16 +225,21 @@ export class VanJsfField extends VanJSComponent {
       import("@codemirror/lint"),
       import("eslint-linter-browserify"),
       import("globals"),
+      import("thememirror"),
     ]);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const globals: any = (globalsModule as any).default ?? globalsModule;
+    // A `code` field may declare the globals its host injects at runtime. Those names are in
+    // no environment preset, so without this every single one of them reads as `no-undef`.
+    const fieldGlobals =
+      this.field.globals && typeof this.field.globals === "object" ? this.field.globals : {};
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const eslintConfig: any = {
       languageOptions: {
-        globals: { ...globals.node },
+        globals: { ...fieldGlobals, ...globals.node },
         parserOptions: { ecmaVersion: 2022, sourceType: "module" },
       },
-      rules: { semi: ["error", "never"] },
+      rules: ESLINT_RULES,
     };
     const cmTheme = EditorView.theme({
       '.cm-content, .cm-gutter': { "min-height": "150px" },
@@ -169,7 +249,7 @@ export class VanJsfField extends VanJSComponent {
       '.cm-wrap': { border: '1px solid silver' },
     });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const extensions: any[] = [cmTheme, EditorView.updateListener.of((e) => {
+    const extensions: any[] = [dracula, cmTheme, EditorView.updateListener.of((e) => {
       this.field.error = null;
       forEachDiagnostic(e.state, (diag) => {
         if (diag.severity === "error") {
