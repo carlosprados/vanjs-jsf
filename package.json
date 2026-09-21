@@ -8,7 +8,7 @@
     "form",
     "ui-library"
   ],
-  "version": "0.5.0",
+  "version": "0.5.1",
   "author": {
     "name": "Carlos Prados",
     "email": "carlos.prados@gmail.com"
@@ -34,15 +34,14 @@
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.3",
     "@codemirror/lang-json": "^6.0.1",
+    "@codemirror/lint": "^6.0.0",
     "@remoteoss/json-schema-form": "^0.11.9-beta.0",
     "codemirror": "^6.0.1",
-    "codemirror-json5": "^1.0.3",
     "eslint-linter-browserify": "^9.20.1",
-    "eslint4b-prebuilt": "^6.7.2",
-    "globals": "^15.15.0",
+    "globals": "^17.0.0",
     "pikaday": "^1.8.2",
-    "vanjs-core": "^1.5.3",
-    "vanjs-ext": "^0.6.2"
+    "thememirror": "^2.0.1",
+    "vanjs-core": "^1.5.3"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
